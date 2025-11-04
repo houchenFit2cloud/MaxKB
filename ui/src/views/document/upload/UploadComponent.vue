@@ -156,7 +156,7 @@
         action="#"
         :auto-upload="false"
         :show-file-list="false"
-        accept=".txt, .md, .log, .docx, .pdf, .html,.zip,.xlsx,.xls,.csv"
+
         :limit="file_count_limit"
         :on-exceed="onExceed"
         :on-change="fileHandleChange"
@@ -173,13 +173,7 @@
               {{ $t('views.document.upload.selectFiles') }}
             </em>
           </p>
-          <div class="upload__decoration">
-            <p>
-              {{
-                $t('views.document.upload.formats')
-              }}TXT、Markdown、PDF、DOCX、HTML、XLS、XLSX、CSV、ZIP
-            </p>
-          </div>
+
         </div>
       </el-upload>
     </el-form-item>

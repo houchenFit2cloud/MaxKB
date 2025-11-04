@@ -72,7 +72,7 @@ export function getImgUrl(name: string) {
 
 // 是否是白名单后缀
 export function isRightType(name: string, type: string) {
-  return typeList[type].includes(fileType(name).toLowerCase())
+  return true
 }
 
 // 下载
