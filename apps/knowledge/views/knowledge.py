@@ -220,6 +220,35 @@ class KnowledgeView(APIView):
                 }
             ).hit_test())
 
+        @extend_schema(
+            methods=['GET'],
+            summary=_('Hit test list'),
+            description=_('Hit test list'),
+            operation_id=_('Hit test list'),  # type: ignore
+            parameters=HitTestAPI.get_parameters(),
+            responses=HitTestAPI.get_response(),
+            tags=[_('Knowledge Base')]  # type: ignore
+        )
+        @has_permissions(
+            PermissionConstants.KNOWLEDGE_HIT_TEST.get_workspace_knowledge_permission(),
+            PermissionConstants.KNOWLEDGE_HIT_TEST.get_workspace_permission_workspace_manage_role(),
+            RoleConstants.WORKSPACE_MANAGE.get_workspace_role(),
+            ViewPermission([RoleConstants.USER.get_workspace_role()],
+                           [PermissionConstants.KNOWLEDGE.get_workspace_knowledge_permission()], CompareConstants.AND),
+        )
+        def get(self, request: Request, workspace_id: str, knowledge_id: str):
+            return result.success(KnowledgeSerializer.HitTest(
+                data={
+                    'workspace_id': workspace_id,
+                    'knowledge_id': knowledge_id,
+                    'user_id': request.user.id,
+                    "query_text": request.query_params.get("query_text"),
+                    "top_number": request.query_params.get("top_number"),
+                    'similarity': request.query_params.get('similarity'),
+                    'search_mode': request.query_params.get('search_mode')
+                }
+            ).hit_test())
+
     class Embedding(APIView):
         authentication_classes = [TokenAuth]
 

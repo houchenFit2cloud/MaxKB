@@ -167,6 +167,21 @@ const putKnowledgeHitTest: (
 }
 
 /**
+ * 命中测试列表(GET方式)
+ * @param knowledge_id
+ * @param params 查询参数 { query_text: string, top_number: number, similarity: number, search_mode: string }
+ * @param loading
+ * @returns
+ */
+const getKnowledgeHitTest: (
+  knowledge_id: string,
+  params: any,
+  loading?: Ref<boolean>,
+) => Promise<Result<Array<any>>> = (knowledge_id, params, loading) => {
+  return get(`${prefix.value}/${knowledge_id}/hit_test`, params, loading)
+}
+
+/**
  * 同步知识库
  * @param 参数 knowledge_id
  * @query 参数 sync_type // 同步类型->replace:替换同步,complete:完整同步
@@ -315,6 +330,7 @@ export default {
   exportZipKnowledge,
   putGenerateRelated,
   putKnowledgeHitTest,
+  getKnowledgeHitTest,
   putSyncWebKnowledge,
   postKnowledge,
   getKnowledgeModel,

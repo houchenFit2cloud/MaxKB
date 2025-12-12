@@ -330,7 +330,7 @@ function getHitTestList() {
     ...formInline.value,
   }
   loadSharedApi({ type: 'knowledge', systemType: apiType.value })
-    .putKnowledgeHitTest(id, obj, loading)
+    .getKnowledgeHitTest(id, obj, loading)
     .then((res: any) => {
       paragraphDetail.value = res.data && arraySort(res.data, 'comprehensive_score', true)
       questionTitle.value = inputValue.value
