@@ -6,7 +6,17 @@ import { type Ref } from 'vue'
 
 const prefix = '/system/resource/application'
 
-
+/**
+ * 获取全部应用
+ * @param param
+ * @param loading
+ */
+const getAllApplication: (param?: any, loading?: Ref<boolean>) => Promise<Result<any[]>> = (
+  param,
+  loading,
+) => {
+  return get(`${prefix}`, param, loading)
+}
 /**
  * 获取分页应用
  * param {
@@ -112,6 +122,23 @@ const getStatistics: (
   return get(`${prefix}/${application_id}/application_stats`, data, loading)
 }
 /**
+ * 统计token消耗
+ */
+const getTokenUsage: (
+  application_id: string,
+  data: any,
+  loading?: Ref<boolean>,
+) => Promise<Result<any>> = (application_id, data, loading) => {
+  return get(`${prefix}/${application_id}/application_token_usage`, data, loading)
+}
+const topQuestions: (
+  application_id: string,
+  data: any,
+  loading?: Ref<boolean>,
+) => Promise<Result<any>> = (application_id, data, loading) => {
+  return get(`${prefix}/${application_id}/top_questions`, data, loading)
+}
+/**
  * 打开调试对话id
  * @param application_id 应用id
  * @param loading 加载器
@@ -126,10 +153,10 @@ const open: (application_id: string, loading?: Ref<boolean>) => Promise<Result<s
 
 /**
  * 生成提示词
- * @param application_id 
- * @param model_id 
- * @param data 
- * @returns 
+ * @param application_id
+ * @param model_id
+ * @param data
+ * @returns
  */
 const generate_prompt: (application_id:string, model_id:string, data: any) => Promise<any> = (
   application_id,
@@ -174,7 +201,7 @@ const playDemoText: (application_id: string, data: any, loading?: Ref<boolean>) 
  * 文本转语音
  */
 const postTextToSpeech: (
-  application_id: String,
+  application_id: string,
   data: any,
   loading?: Ref<boolean>,
 ) => Promise<Result<any>> = (application_id, data, loading) => {
@@ -184,7 +211,7 @@ const postTextToSpeech: (
  * 语音转文本
  */
 const speechToText: (
-  application_id: String,
+  application_id: string,
   data: any,
   loading?: Ref<boolean>,
 ) => Promise<Result<any>> = (application_id, data, loading) => {
@@ -289,7 +316,7 @@ const updatePlatformConfig: (
 /**
  * mcp 节点
  */
-const getMcpTools: (application_id: String, loading?: Ref<boolean>) => Promise<Result<any>> = (
+const getMcpTools: (application_id: string, loading?: Ref<boolean>) => Promise<Result<any>> = (
   application_id,
   loading,
 ) => {
@@ -297,6 +324,7 @@ const getMcpTools: (application_id: String, loading?: Ref<boolean>) => Promise<R
 }
 
 export default {
+  getAllApplication,
   getApplication,
   putApplication,
   delApplication,
@@ -320,5 +348,7 @@ export default {
   speechToText,
   getMcpTools,
   putXpackAccessToken,
-  generate_prompt
+  generate_prompt,
+  getTokenUsage,
+  topQuestions
 }

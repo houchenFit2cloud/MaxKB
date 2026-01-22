@@ -47,7 +47,7 @@
       ref="nodeCascaderRef"
       :nodeModel="model"
       class="w-full"
-      :placeholder="$t('views.applicationWorkflow.variable.placeholder')"
+      :placeholder="$t('workflow.variable.placeholder')"
       v-model="formValue.option_list"
     />
   </el-form-item>
@@ -133,7 +133,7 @@
       :reserve-keyword="false"
       v-model="formValue.default_value"
       :teleported="false"
-      popper-class="default-select"
+      popper-class="max-w-350"
     >
       <el-option
         v-for="(option, index) in formValue.option_list"
@@ -159,7 +159,7 @@ const assignment_method_option_list = computed(() => {
   ]
   if (getModel) {
     option_list.push({
-      label: t('views.applicationWorkflow.variable.Referencing'),
+      label: t('workflow.variable.Referencing'),
       value: 'ref_variables',
     })
   }
@@ -191,9 +191,7 @@ const default_ref_variables_value_rule = {
   validator: (rule: any, value: any, callback: any) => {
     console.log(value.length)
     if (!(Array.isArray(value) && value.length > 1)) {
-      callback(
-        t('views.applicationWorkflow.variable.Referencing') + t('common.required'),
-      )
+      callback(t('workflow.variable.Referencing') + t('common.required'))
     }
 
     return true
@@ -250,11 +248,5 @@ onMounted(() => {
     top: -35px;
   }
 }
-:deep(.el-form-item__label) {
-  display: block;
-}
 
-:deep(.el-select-dropdown) {
-  max-width: 400px;
-}
 </style>

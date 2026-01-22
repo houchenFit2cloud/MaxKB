@@ -34,7 +34,7 @@ from knowledge.task.embedding import embedding_by_paragraph, embedding_by_paragr
 class ChatRecordSerializerModel(serializers.ModelSerializer):
     class Meta:
         model = ChatRecord
-        fields = ['id', 'chat_id', 'vote_status', 'problem_text', 'answer_text',
+        fields = ['id', 'chat_id', 'vote_status','vote_reason','vote_other_content', 'problem_text', 'answer_text',
                   'message_tokens', 'answer_tokens', 'const', 'improve_paragraph_id_list', 'run_time', 'index',
                   'answer_text_list',
                   'create_time', 'update_time']
@@ -111,6 +111,16 @@ class ApplicationChatRecordQuerySerializers(serializers.Serializer):
                 QuerySet(ChatRecord).filter(chat_id=self.data.get('chat_id')).order_by(order_by)]
 
     @staticmethod
+    def get_loop_workflow_node(details):
+        result = []
+        for item in details.values():
+            if item.get('type') == 'loop-node':
+                for loop_item in item.get('loop_node_data') or []:
+                    for inner_item in loop_item.values():
+                        result.append(inner_item)
+        return result
+
+    @staticmethod
     def reset_chat_record(chat_record, show_source, show_exec):
         knowledge_list = []
         paragraph_list = []
@@ -119,7 +129,8 @@ class ApplicationChatRecordQuerySerializers(serializers.Serializer):
             paragraph_list = chat_record.details.get('search_step').get(
                 'paragraph_list')
 
-        for item in chat_record.details.values():
+        for item in [*chat_record.details.values(),
+                     *ApplicationChatRecordQuerySerializers.get_loop_workflow_node(chat_record.details)]:
             if item.get('type') == 'search-knowledge-node' and item.get('show_knowledge', False):
                 paragraph_list = paragraph_list + (item.get(
                     'paragraph_list') or [])

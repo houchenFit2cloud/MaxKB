@@ -24,9 +24,6 @@ export default {
     requiredMessage: 'cannot be empty',
     jsonMessage: 'Incorrect JSON format',
   },
-  searchBar: {
-    placeholder: 'Please enter keywords to search',
-  },
   paramForm: {
     field: {
       label: 'Parameter',
@@ -118,9 +115,6 @@ export default {
   },
   AssignmentMethod: {
     label: 'Assignment Method',
-    custom: {
-      label: 'Custom',
-    },
     ref_variables: {
       label: 'Reference Variables',
       popover: 'Variable values must comply with',

@@ -1,11 +1,8 @@
 export default {
   title: 'Knowledge',
-  relatedApplications: 'Linked App',
+  relatedApplications: 'Linked Agent',
   document_count: 'docs',
-  relatedApp_count: 'linked apps',
-  searchBar: {
-    placeholder: 'Search by name',
-  },
+  relatedApp_count: 'linked agents',
   setting: {
     vectorization: 'Vectorization',
     sync: 'Sync',
@@ -20,13 +17,15 @@ export default {
   delete: {
     confirmTitle: 'Confirm deletion of knowledge:',
     confirmMessage1: 'This knowledge is related with',
-    confirmMessage2: 'APP. Deleting it will be irreversible, please proceed with caution.',
+    confirmMessage2: 'agent. Deleting it will be irreversible, please proceed with caution.',
+    resourceCountMessage: 'This knowledge is associated with {count} resources, and will be unavailable after deletion. Please proceed with caution.',
   },
   knowledgeType: {
     label: 'Type',
     generalKnowledge: 'General Knowledge',
     webKnowledge: 'Web Knowledge',
     larkKnowledge: 'Lark Knowledge',
+    workflowKnowledge: 'Workflow Knowledge',
     yuqueKnowledge: 'Yuque Knowledge',
     generalInfo: 'Upload local documents',
     webInfo: 'Sync text data from a web site',
@@ -36,6 +35,8 @@ export default {
     createWebKnowledge: 'Create Web Knowledge',
     createLarkKnowledge: 'Create Lark Knowledge',
     createYuqueKnowledge: 'Create Yuque Knowledge',
+    createWorkflowKnowledge: 'Create Workflow Knowledge',
+    workflowInfo: 'Building a knowledge base through custom workflow methods',
   },
   form: {
     knowledgeName: {
@@ -70,6 +71,15 @@ export default {
     file_size_limit: {
       label: 'Maximum size of each document(MB)',
       placeholder: 'Suggest based on server configuration, otherwise may cause service shutdown',
+    },
+    appTemplate: {
+      blank: {
+        title: 'Blank Creation',
+      },
+      basic: {
+        title: 'Basic Template',
+        description: 'Supports basic workflow templates for local files, Lark documents, and web site data sources',
+      },
     },
   },
 

@@ -107,7 +107,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { set,cloneDeep } from 'lodash'
+import { set, cloneDeep } from 'lodash'
 import Sortable from 'sortablejs'
 import UserFieldFormDialog from './UserFieldFormDialog.vue'
 import { MsgError } from '@/utils/message'
@@ -138,7 +138,7 @@ function deleteField(index: any) {
 function refreshFieldList(data: any, index: any) {
   for (let i = 0; i < inputFieldList.value.length; i++) {
     if (inputFieldList.value[i].field === data.field && index !== i) {
-      MsgError(t('views.applicationWorkflow.tip.paramErrorMessage') + data.field)
+      MsgError(t('workflow.tip.paramErrorMessage') + data.field)
       return
     }
   }
@@ -146,7 +146,7 @@ function refreshFieldList(data: any, index: any) {
   const arr = props.nodeModel.properties.api_input_field_list
   for (let i = 0; i < arr.length; i++) {
     if (arr[i].variable === data.field) {
-      MsgError(t('views.applicationWorkflow.tip.paramErrorMessage') + data.field)
+      MsgError(t('workflow.tip.paramErrorMessage') + data.field)
       return
     }
   }
@@ -225,7 +225,7 @@ onMounted(() => {
   inputFieldList.value.forEach((item, index) => {
     item.label = item.label || item.name
     item.field = item.field || item.variable
-    item.required = item.required || item.is_required
+    item.required = item.required == undefined ? item.is_required : item.required
     switch (item.type) {
       case 'input':
         item.input_type = 'TextInput'

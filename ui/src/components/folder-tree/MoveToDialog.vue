@@ -11,12 +11,6 @@
       ref="treeRef"
       :source="source"
       :data="folderList"
-      :treeStyle="{
-        height: 'calc(100vh - 320px)',
-        border: '1px solid #ebeef5',
-        borderRadius: '6px',
-        padding: '8px',
-      }"
       :default-expanded-keys="[currentNodeKey]"
       :canOperation="false"
       class="move-to-dialog-tree"
@@ -36,6 +30,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch, reactive } from 'vue'
+import folderApi from '@/api/workspace/folder'
 import { MsgError, MsgSuccess } from '@/utils/message'
 import { t } from '@/locales'
 import useStore from '@/stores'
@@ -43,7 +38,7 @@ import { SourceTypeEnum } from '@/enums/common'
 import KnowledgeApi from '@/api/knowledge/knowledge'
 import ApplicationApi from '@/api/application/application'
 import ToolApi from '@/api/tool/tool'
-const { folder, application } = useStore()
+const { folder } = useStore()
 const emit = defineEmits(['refresh'])
 
 const props = defineProps({
@@ -71,15 +66,18 @@ watch(dialogVisible, (bool) => {
   }
 })
 
-const open = (data: any) => {
+const isFolder = ref<boolean>(false)
+
+const open = (data: any, is_folder?: any) => {
   detail.value = data
+  isFolder.value = is_folder
   getFolder()
   dialogVisible.value = true
 }
 
 function getFolder() {
   const params = {}
-  folder.asyncGetFolder(props.source, params, loading).then((res: any) => {
+  folder.asyncGetFolder(props.source, params, 'workspace', loading).then((res: any) => {
     folderList.value = res.data
     if (folderList.value?.length > 0) {
       currentNodeKey.value = folderList.value[0]?.id
@@ -99,7 +97,19 @@ const submitHandle = async () => {
       ...detail.value,
       folder_id: selectForderId.value,
     }
-    if (props.source === SourceTypeEnum.KNOWLEDGE) {
+    if (isFolder.value) {
+      const folder_obj = {
+        ...detail.value,
+        parent_id: selectForderId.value,
+      }
+      folderApi
+        .putFolder(detail.value.id, detail.value.folder_type, folder_obj, loading)
+        .then(() => {
+          MsgSuccess(t('common.saveSuccess'))
+          emit('refresh')
+          dialogVisible.value = false
+        })
+    } else if (props.source === SourceTypeEnum.KNOWLEDGE) {
       if (detail.value.type === 2) {
         KnowledgeApi.putLarkKnowledge(detail.value.id, obj, loading).then(() => {
           MsgSuccess(t('common.saveSuccess'))
@@ -139,8 +149,12 @@ defineExpose({ open })
     padding: 0 !important;
     margin-bottom: 8px;
   }
-  :deep(.tree-label) {
-    max-width: 100% !important;
+  :deep(.el-scrollbar) {
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 6px;
+  }
+  :deep(.el-tree) {
+    height: calc(100vh - 320px) !important;
   }
 }
 </style>

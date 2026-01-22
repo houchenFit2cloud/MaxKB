@@ -78,7 +78,6 @@
                     {{ $t('views.login.resetPassword') }}
                   </el-dropdown-item>
                   <el-dropdown-item
-                    v-if="chatUser.chatUserProfile?.source === 'LOCAL'"
                     class="border-t"
                     style="padding-top: 8px; padding-bottom: 8px"
                     @click="logout"
@@ -196,17 +195,20 @@
               </span>
             </div>
           </div>
-          <div class="execution-detail-content" v-loading="rightPanelLoading">
-            <ParagraphSourceContent
-              v-if="rightPanelType === 'knowledgeSource'"
-              :detail="rightPanelDetail"
-            />
-            <ExecutionDetailContent
-              v-if="rightPanelType === 'executionDetail'"
-              :detail="executionDetail"
-              :appType="applicationDetail?.type"
-            />
-            <ParagraphDocumentContent :detail="rightPanelDetail" v-else />
+
+          <div class="execution-detail-content mb-8" v-loading="rightPanelLoading">
+            <el-scrollbar>
+              <ParagraphSourceContent
+                v-if="rightPanelType === 'knowledgeSource'"
+                :detail="rightPanelDetail"
+              />
+              <ExecutionDetailContent
+                v-if="rightPanelType === 'executionDetail'"
+                :detail="executionDetail"
+                :appType="applicationDetail?.type"
+              />
+              <ParagraphDocumentContent :detail="rightPanelDetail" v-else />
+            </el-scrollbar>
           </div>
         </div>
       </div>
@@ -222,7 +224,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, nextTick, computed, watch, provide } from 'vue'
 import { marked } from 'marked'
 import { saveAs } from 'file-saver'
 import chatAPI from '@/api/chat/chat'
@@ -242,6 +244,9 @@ import { getFileUrl } from '@/utils/common'
 import PdfExport from '@/components/pdf-export/index.vue'
 
 useResize()
+
+provide('scrollData', loadInfiniteScroll)
+provide('chatLogPagination', () => chatLogPagination)
 const pdfExportRef = ref<InstanceType<typeof PdfExport>>()
 const { common, chatUser } = useStore()
 const router = useRouter()
@@ -346,6 +351,8 @@ function clearChat() {
     paginationConfig.value.current_page = 1
     paginationConfig.value.total = 0
     currentRecordList.value = []
+    chatLogPagination.value.current_page = 1
+    chatLogData.value = []
     getChatLog()
   })
 }
@@ -383,24 +390,31 @@ function newChat() {
   }
 }
 
+const chatLogPagination = ref({
+  total: 0,
+  page_size: 20,
+  current_page: 1,
+})
 function getChatLog(refresh?: boolean) {
-  const page = {
-    current_page: 1,
-    page_size: 20,
-  }
+  chatAPI
+    .pageChat(chatLogPagination.value.current_page, chatLogPagination.value.page_size, left_loading)
+    .then((res: any) => {
+      chatLogPagination.value.total = res.data.total
+      chatLogData.value = [...chatLogData.value, ...res.data.records]
+      if (refresh) {
+        currentChatName.value = chatLogData.value?.[0]?.abstract
+      } else {
+        paginationConfig.value.current_page = 1
+        paginationConfig.value.total = 0
+        currentRecordList.value = []
+        currentChatId.value = 'new'
+        currentChatName.value = t('chat.createChat')
+      }
+    })
+}
 
-  chatAPI.pageChat(page.current_page, page.page_size, left_loading).then((res: any) => {
-    chatLogData.value = res.data.records
-    if (refresh) {
-      currentChatName.value = chatLogData.value?.[0]?.abstract
-    } else {
-      paginationConfig.value.current_page = 1
-      paginationConfig.value.total = 0
-      currentRecordList.value = []
-      currentChatId.value = 'new'
-      currentChatName.value = t('chat.createChat')
-    }
-  })
+function loadInfiniteScroll() {
+  getChatLog(true)
 }
 
 function getChatRecord() {
@@ -457,13 +471,26 @@ const clickListHandle = (item: any) => {
 
 function refresh(id: string) {
   currentChatId.value = id
+  chatLogPagination.value.current_page = 1
+  chatLogData.value = []
   getChatLog(true)
 }
 
 async function exportMarkdown(): Promise<void> {
   const suggestedName: string = `${currentChatId.value}.md`
   const markdownContent: string = currentRecordList.value
-    .map((record: any) => `# ${record.problem_text}\n\n${record.answer_text}\n\n`)
+    .map((record: any) => {
+      let answerText = ''
+      if (Array.isArray(record.answer_text_list)) {
+        answerText = record.answer_text_list
+          .flat()
+          .map((item: any) => item?.content || '')
+          .join('\n\n')
+      } else {
+        answerText = record.answer_text || ''
+      }
+      return `# ${record.problem_text}\n\n${answerText}\n\n`
+    })
     .join('\n')
 
   const blob: Blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' })
@@ -473,7 +500,18 @@ async function exportMarkdown(): Promise<void> {
 async function exportHTML(): Promise<void> {
   const suggestedName: string = `${currentChatId.value}.html`
   const markdownContent: string = currentRecordList.value
-    .map((record: any) => `# ${record.problem_text}\n\n${record.answer_text}\n\n`)
+    .map((record: any) => {
+      let answerText = ''
+      if (Array.isArray(record.answer_text_list)) {
+        answerText = record.answer_text_list
+          .flat()
+          .map((item: any) => item?.content || '')
+          .join('\n\n')
+      } else {
+        answerText = record.answer_text || ''
+      }
+      return `# ${record.problem_text}\n\n${answerText}\n\n`
+    })
     .join('\n')
   const htmlContent: any = marked(markdownContent)
 
@@ -536,7 +574,7 @@ function closeExecutionDetail() {
 
   &__left {
     position: relative;
-    z-index: 1;
+    z-index: 11;
 
     .pc-collapse {
       position: absolute;
@@ -569,7 +607,7 @@ function closeExecutionDetail() {
       .execution-detail-content {
         flex: 1;
         overflow: hidden;
-        height: calc(100% - 63px);
+        height: calc(100% - 45px);
 
         .execution-details {
           padding: 16px;

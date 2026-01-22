@@ -1,6 +1,6 @@
 <template>
   <NodeContainer :nodeModel="nodeModel">
-    <h5 class="title-decoration-1 mb-8">{{ $t('views.applicationWorkflow.variable.global') }}</h5>
+    <h5 class="title-decoration-1 mb-8">{{ $t('workflow.variable.global') }}</h5>
     <div
       v-for="(item, index) in nodeModel.properties.config.globalFields"
       :key="index"
@@ -11,7 +11,7 @@
       <span class="break-all">{{ item.label }} {{ '{' + item.value + '}' }}</span>
       <el-tooltip
         effect="dark"
-        :content="$t('views.applicationWorkflow.setting.copyParam')"
+        :content="$t('workflow.setting.copyParam')"
         placement="top"
         v-if="showicon === true"
       >
@@ -21,7 +21,7 @@
       </el-tooltip>
     </div>
     <template v-if="nodeModel.properties.config.chatFields?.length">
-      <h5 class="title-decoration-1 mb-8">{{ $t('views.applicationWorkflow.variable.chat') }}</h5>
+      <h5 class="title-decoration-1 mb-8">{{ $t('workflow.variable.chat') }}</h5>
       <div
         v-for="(item, index) in nodeModel.properties.config.chatFields || []"
         :key="index"
@@ -32,7 +32,7 @@
         <span class="break-all">{{ item.label }} {{ '{' + item.value + '}' }}</span>
         <el-tooltip
           effect="dark"
-          :content="$t('views.applicationWorkflow.setting.copyParam')"
+          :content="$t('workflow.setting.copyParam')"
           placement="top"
           v-if="showicon === true"
         >
@@ -54,7 +54,7 @@ const props = defineProps<{ nodeModel: any }>()
 
 const showicon = ref(false)
 const globalFields = [
-  { label: t('views.applicationWorkflow.nodes.startNode.currentTime'), value: 'time' },
+  { label: t('workflow.nodes.startNode.currentTime'), value: 'time' },
   {
     label: t('views.application.form.historyRecord.label'),
     value: 'history_context',
@@ -67,6 +67,10 @@ const globalFields = [
   {
     label: t('chat.chatUserType'),
     value: 'chat_user_type',
+  },
+  {
+    label: t('chat.chatUserGroup'),
+    value: 'chat_user_group',
   },
   {
     label: t('views.chatUser.title'),
@@ -100,7 +104,7 @@ const refreshFieldList = () => {
 const refreshChatFieldList = () => {
   const chatFieldList = props.nodeModel.graphModel.nodes
     .filter((v: any) => v.id === 'base-node')
-    .map((v: any) => cloneDeep(v.properties.chat_input_field_list))
+    .map((v: any) => cloneDeep(v.properties.chat_input_field_list || []))
     .reduce((x: any, y: any) => [...x, ...y], [])
     .map((i: any) => ({ label: i.label, value: i.field }))
 

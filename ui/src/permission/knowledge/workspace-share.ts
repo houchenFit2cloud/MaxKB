@@ -11,8 +11,10 @@ const workspaceShare = {
   export: () => false,
   delete: () => false,
   auth: () => false,
-
-  doc_read: () => false,  
+  relate_map: () => false,
+  
+  doc_read: () => false,
+  jump_read: () => false,
   doc_create: () => false,
   doc_vector: () => false,
   doc_generate: () => false,
@@ -32,13 +34,13 @@ const workspaceShare = {
   tag_create: () => false,
   tag_delete: () => false,
   tag_edit: () => false,
-  
+
   problem_read: () => false,
   problem_create: () => false,
   problem_relate: () => false,
   problem_delete: () => false,
   problem_edit: () => false,
-  chat_user_edit: () =>false,
+  chat_user_edit: () => false,
 
   folderRead: () => false,
   folderManage: () => false,
@@ -47,6 +49,9 @@ const workspaceShare = {
   folderAuth: () => false,
   folderDelete: () => false,
   hit_test: () => false,
+  debug: () => false,
+  workflow_edit: () => false,
+  workflow_export: () => false,
 }
 
 export default workspaceShare

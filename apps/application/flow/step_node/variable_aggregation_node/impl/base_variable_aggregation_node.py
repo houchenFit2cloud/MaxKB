@@ -10,6 +10,16 @@ from application.flow.i_step_node import NodeResult
 from application.flow.step_node.variable_aggregation_node.i_variable_aggregation_node import IVariableAggregation
 
 
+def _filter_file_bytes(data):
+    """递归过滤掉所有层级的 file_bytes"""
+    if isinstance(data, dict):
+        return {k: _filter_file_bytes(v) for k, v in data.items() if k != 'file_bytes'}
+    elif isinstance(data, list):
+        return [_filter_file_bytes(item) for item in data]
+    else:
+        return data
+
+
 class BaseVariableAggregationNode(IVariableAggregation):
 
     def save_context(self, details, workflow_manage):
@@ -18,6 +28,7 @@ class BaseVariableAggregationNode(IVariableAggregation):
         self.context['result'] = details.get('result')
         self.context['strategy'] = details.get('strategy')
         self.context['group_list'] = details.get('group_list')
+        self.context['exception_message'] = details.get('err_message')
 
     def get_first_non_null(self, variable_list):
 
@@ -63,14 +74,17 @@ class BaseVariableAggregationNode(IVariableAggregation):
             {'result': result, 'strategy': strategy, 'group_list': self.reset_group_list(group_list), **result}, {})
 
     def get_details(self, index: int, **kwargs):
+        result = _filter_file_bytes(self.context.get('result'))
+        group_list = _filter_file_bytes(self.context.get('group_list'))
         return {
             'name': self.node.properties.get('stepName'),
             "index": index,
             'run_time': self.context.get('run_time'),
             'type': self.node.type,
-            'result': self.context.get('result'),
+            'result': result,
             'strategy': self.context.get('strategy'),
-            'group_list': self.context.get('group_list'),
+            'group_list': group_list,
             'status': self.status,
-            'err_message': self.err_message
+            'err_message': self.err_message,
+            'enableException': self.node.properties.get('enableException'),
         }

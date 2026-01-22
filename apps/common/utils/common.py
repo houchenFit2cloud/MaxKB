@@ -298,7 +298,8 @@ ALLOWED_CLASSES = {
     ("builtins", "dict"),
     ('uuid', 'UUID'),
     ("application.serializers.application", "MKInstance"),
-    ("tools.serializers.tool", "ToolInstance")
+    ("tools.serializers.tool", "ToolInstance"),
+    ("knowledge.serializers.knowledge_workflow", "KBWFInstance")
 }
 
 
@@ -340,3 +341,13 @@ def generate_uuid(tag: str):
 
 def filter_workspace(query_list):
     return [q for q in query_list if q.name != "workspace_id"]
+
+
+def filter_special_character(_str):
+    """
+    过滤特殊字符
+    """
+    s_list = ["\\u0000"]
+    for t in s_list:
+        _str = _str.replace(t, '')
+    return _str

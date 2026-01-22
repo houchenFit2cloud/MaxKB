@@ -182,13 +182,19 @@ const vote: (
   chat_id: string,
   chat_record_id: string,
   vote_status: string,
+  vote_reason?: string,
+  vote_other_content?: string,
   loading?: Ref<boolean>,
-) => Promise<Result<boolean>> = (chat_id, chat_record_id, vote_status, loading) => {
+) => Promise<Result<boolean>> = (chat_id, chat_record_id, vote_status, vote_reason, vote_other_content, loading) => {
+  
+  const data = {
+  vote_status,
+  ...(vote_reason !== undefined && { vote_reason }),
+  ...(vote_other_content !== undefined && { vote_other_content })
+}
   return put(
     `/vote/chat/${chat_id}/chat_record/${chat_record_id}`,
-    {
-      vote_status,
-    },
+    data,
     undefined,
     loading,
   )
@@ -332,6 +338,10 @@ const postUploadFile: (
   fd.append('source_type', sourceType)
   return post(`/oss/file`, fd, undefined, loading)
 }
+
+const getFile: (application_id: string, params: any) => Promise<Result<any>> = (application_id, params) => {
+  return get(`/oss/get_url/${application_id}`, params)
+}
 export default {
   open,
   chat,
@@ -362,4 +372,5 @@ export default {
   clearChat,
   modifyChat,
   postUploadFile,
+  getFile
 }

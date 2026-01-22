@@ -10,9 +10,9 @@
               </el-avatar>
             </slot>
           </div>
-          <div style="width: 90%">
+          <div style="width: 90%" class="mt-4">
             <slot name="title">
-              <span class="ellipsis-1 mb-4" :title="title" style="width: 80%">
+              <span class="ellipsis-1" :title="title" style="width: 80%">
                 {{ title }}
               </span>
             </slot>
@@ -118,7 +118,7 @@ function subHoveredEnter() {
   .status-tag {
     position: absolute;
     right: 16px;
-    top: 15px;
+    top: 14px;
   }
 }
 </style>

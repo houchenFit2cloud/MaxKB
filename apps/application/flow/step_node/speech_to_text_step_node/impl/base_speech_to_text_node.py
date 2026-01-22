@@ -19,8 +19,9 @@ class BaseSpeechToTextNode(ISpeechToTextNode):
         self.context['result'] = details.get('answer')
         if self.node_params.get('is_result', False):
             self.answer_text = details.get('answer')
+        self.context['exception_message'] = details.get('err_message')
 
-    def execute(self, stt_model_id, chat_id, audio, model_params_setting=None, **kwargs) -> NodeResult:
+    def execute(self, stt_model_id, audio, model_params_setting=None, **kwargs) -> NodeResult:
         workspace_id = self.workflow_manage.get_body().get('workspace_id')
         stt_model = get_model_instance_by_model_workspace_id(stt_model_id, workspace_id, **model_params_setting)
         audio_list = audio
@@ -69,4 +70,5 @@ class BaseSpeechToTextNode(ISpeechToTextNode):
             'status': self.status,
             'err_message': self.err_message,
             'audio_list': self.context.get('audio_list'),
+            'enableException': self.node.properties.get('enableException'),
         }

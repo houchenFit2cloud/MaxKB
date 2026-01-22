@@ -6,7 +6,6 @@
     @date：2023/9/4 11:16
     @desc:  认证类
 """
-import traceback
 from importlib import import_module
 
 from django.conf import settings
@@ -18,6 +17,7 @@ from rest_framework.authentication import TokenAuthentication
 
 from common.exception.app_exception import AppAuthenticationFailed, AppEmbedIdentityFailed, AppChatNumOutOfBoundsFailed, \
     AppApiException
+from common.utils.logger import maxkb_logger
 
 token_cache = cache.caches['default']
 
@@ -51,6 +51,8 @@ def new_instance_by_class_path(class_path: str):
 
 
 handles = [new_instance_by_class_path(class_path) for class_path in settings.AUTH_HANDLES]
+chat_handles = [new_instance_by_class_path(class_path) for class_path in settings.CHAT_AUTH_HANDLES]
+all_handles = handles + chat_handles
 
 
 class TokenDetails:
@@ -88,7 +90,59 @@ class TokenAuth(TokenAuthentication):
                     return handle.handle(request, token, token_details.get_token_details)
             raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
         except Exception as e:
-            traceback.print_stack()
+            maxkb_logger.error(f'Exception: {e}', exc_info=True)
+            if isinstance(e, AppEmbedIdentityFailed) or isinstance(e, AppChatNumOutOfBoundsFailed) or isinstance(e,
+                                                                                                                 AppApiException):
+                raise e
+            raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
+
+
+class ChatTokenAuth(TokenAuthentication):
+    keyword = "Bearer"
+
+    # 重新 authenticate 方法，自定义认证规则
+    def authenticate(self, request):
+        auth = request.META.get('HTTP_AUTHORIZATION')
+        # 未认证
+        if auth is None:
+            raise AppAuthenticationFailed(1003, _('Not logged in, please log in first'))
+        if not auth.startswith("Bearer "):
+            raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
+        try:
+            token = auth[7:]
+            token_details = TokenDetails(token)
+            for handle in chat_handles:
+                if handle.support(request, token, token_details.get_token_details):
+                    return handle.handle(request, token, token_details.get_token_details)
+            raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
+        except Exception as e:
+            maxkb_logger.error(f'Exception: {e}', exc_info=True)
+            if isinstance(e, AppEmbedIdentityFailed) or isinstance(e, AppChatNumOutOfBoundsFailed) or isinstance(e,
+                                                                                                                 AppApiException):
+                raise e
+            raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
+
+
+class AllTokenAuth(TokenAuthentication):
+    keyword = "Bearer"
+
+    # 重新 authenticate 方法，自定义认证规则
+    def authenticate(self, request):
+        auth = request.META.get('HTTP_AUTHORIZATION')
+        # 未认证
+        if auth is None:
+            raise AppAuthenticationFailed(1003, _('Not logged in, please log in first'))
+        if not auth.startswith("Bearer "):
+            raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
+        try:
+            token = auth[7:]
+            token_details = TokenDetails(token)
+            for handle in all_handles:
+                if handle.support(request, token, token_details.get_token_details):
+                    return handle.handle(request, token, token_details.get_token_details)
+            raise AppAuthenticationFailed(1002, _('Authentication information is incorrect! illegal user'))
+        except Exception as e:
+            maxkb_logger.error(f'Exception: {e}', exc_info=True)
             if isinstance(e, AppEmbedIdentityFailed) or isinstance(e, AppChatNumOutOfBoundsFailed) or isinstance(e,
                                                                                                                  AppApiException):
                 raise e

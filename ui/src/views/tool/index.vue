@@ -1,18 +1,18 @@
 <template>
-  <LayoutContainer showCollapse class="tool-manage">
+  <LayoutContainer showCollapse resizable class="tool-manage">
     <template #left>
       <h4 class="p-12-16 pb-0 mt-12">{{ $t('views.tool.title') }}</h4>
-      <div class="p-8">
-        <folder-tree
-          :source="SourceTypeEnum.TOOL"
-          :data="folderList"
-          :currentNodeKey="folder.currentFolder?.id"
-          @handleNodeClick="folderClickHandle"
-          @refreshTree="refreshFolder"
-          :shareTitle="$t('views.shared.shared_tool')"
-          :showShared="permissionPrecise['is_share']()"
-        />
-      </div>
+
+      <folder-tree
+        :source="SourceTypeEnum.TOOL"
+        :data="folderList"
+        :currentNodeKey="folder.currentFolder?.id"
+        @handleNodeClick="folderClickHandle"
+        @refreshTree="refreshFolder"
+        :shareTitle="$t('views.shared.shared_tool')"
+        :showShared="permissionPrecise['is_share']()"
+        :draggable="true"
+      />
     </template>
     <ToolListContainer @refreshFolder="refreshFolder">
       <template #header>
@@ -23,9 +23,12 @@
           <FolderBreadcrumb :folderList="folderList" @click="folderClickHandle" v-else />
           <el-divider direction="vertical" />
           <el-radio-group v-model="toolType" @change="radioChange" class="app-radio-button-group">
-            <el-radio-button value="">{{ $t('views.tool.all') }}</el-radio-button>
+            <el-radio-button value="">{{ $t('common.status.all') }}</el-radio-button>
             <el-radio-button value="CUSTOM">{{ $t('views.tool.title') }}</el-radio-button>
             <el-radio-button value="MCP">MCP</el-radio-button>
+            <el-radio-button value="DATA_SOURCE">{{
+              $t('views.tool.dataSource.title')
+            }}</el-radio-button>
           </el-radio-group>
         </el-space>
       </template>
@@ -40,7 +43,7 @@ import { SourceTypeEnum } from '@/enums/common'
 import permissionMap from '@/permission'
 import { useRoute } from 'vue-router'
 import useStore from '@/stores'
-import bus from "@/bus"
+import bus from '@/bus'
 const route = useRoute()
 const { folder, tool } = useStore()
 
@@ -64,7 +67,7 @@ const folderList = ref<any[]>([])
 
 function getFolder(bool?: boolean) {
   const params = {}
-  folder.asyncGetFolder(SourceTypeEnum.TOOL, params, loading).then((res: any) => {
+  folder.asyncGetFolder(SourceTypeEnum.TOOL, params, apiType.value, loading).then((res: any) => {
     folderList.value = res.data
     if (bool) {
       // 初始化刷新
@@ -91,6 +94,7 @@ function refreshFolder() {
 
 onMounted(() => {
   getFolder(folder.currentFolder?.id ? false : true)
+  radioChange()
 })
 </script>
 

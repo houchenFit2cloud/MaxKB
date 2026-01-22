@@ -1,18 +1,18 @@
 <template>
-  <LayoutContainer showCollapse class="knowledge-manage">
+  <LayoutContainer showCollapse resizable class="knowledge-manage">
     <template #left>
       <h4 class="p-12-16 pb-0 mt-12">{{ $t('views.knowledge.title') }}</h4>
-      <div class="p-8">
-        <folder-tree
-          :source="SourceTypeEnum.KNOWLEDGE"
-          :data="folderList"
-          :currentNodeKey="folder.currentFolder?.id"
-          @handleNodeClick="folderClickHandle"
-          :shareTitle="$t('views.shared.shared_knowledge')"
-          :showShared="permissionPrecise['is_share']()"
-          @refreshTree="refreshFolder"
-        />
-      </div>
+
+      <folder-tree
+        :source="SourceTypeEnum.KNOWLEDGE"
+        :data="folderList"
+        :currentNodeKey="folder.currentFolder?.id"
+        @handleNodeClick="folderClickHandle"
+        :shareTitle="$t('views.shared.shared_knowledge')"
+        :showShared="permissionPrecise['is_share']()"
+        @refreshTree="refreshFolder"
+        :draggable="true"
+      />
     </template>
     <KnowledgeListContainer @refreshFolder="refreshFolder">
       <template #header>
@@ -52,13 +52,15 @@ const folderList = ref<any[]>([])
 
 function getFolder(bool?: boolean) {
   const params = {}
-  folder.asyncGetFolder(SourceTypeEnum.KNOWLEDGE, params, loading).then((res: any) => {
-    folderList.value = res.data
-    if (bool) {
-      // 初始化刷新
-      folder.setCurrentFolder(res.data?.[0] || {})
-    }
-  })
+  folder
+    .asyncGetFolder(SourceTypeEnum.KNOWLEDGE, params, apiType.value, loading)
+    .then((res: any) => {
+      folderList.value = res.data
+      if (bool) {
+        // 初始化刷新
+        folder.setCurrentFolder(res.data?.[0] || {})
+      }
+    })
 }
 
 function folderClickHandle(row: any) {

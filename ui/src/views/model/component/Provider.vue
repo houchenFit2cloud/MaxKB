@@ -129,6 +129,7 @@ watch(
       'model_local_provider',
       'model_xinference_provider',
       'model_vllm_provider',
+      'model_docker_ai_provider'
     ]
     list
       .filter((v) => v.provider)
@@ -160,12 +161,12 @@ const handleSharedNodeClick = () => {
     padding: 10px 8px;
     font-weight: 400;
     &:hover {
-      border-radius: var();
+      border-radius: var(--app-border-radius-small);
       background: var(--app-text-color-light-1);
     }
   }
   .all-mode-active {
-    border-radius: var();
+    border-radius: var(--app-border-radius-small);
     color: var(--el-color-primary);
     font-weight: 500 !important;
     background: var(--el-color-primary-light-9);
@@ -185,7 +186,7 @@ const handleSharedNodeClick = () => {
       background: none;
       &:hover {
         background: var(--app-text-color-light-1);
-        border-radius: var();
+        border-radius: var(--app-border-radius-small);
       }
     }
     :deep(.el-collapse-item) {
@@ -211,7 +212,7 @@ const handleSharedNodeClick = () => {
     margin-bottom: 4px;
     &.active {
       background: var(--el-color-primary-light-9);
-      border-radius: var();
+      border-radius: var(--app-border-radius-small);
       color: var(--el-color-primary);
       font-weight: 500;
       &:hover {
@@ -219,7 +220,7 @@ const handleSharedNodeClick = () => {
       }
     }
     &:hover {
-      border-radius: var();
+      border-radius: var(--app-border-radius-small);
       background: var(--app-text-color-light-1);
     }
     &.is-active {

@@ -1,59 +1,57 @@
 export default {
-  title: 'APP',
-  createApplication: 'Create Simple APP',
-  createWorkFlowApplication: 'Create Workflow APP',
-  importApplication: 'Import APP',
-  copyApplication: 'Copy APP',
-  workflow: 'WORKFLOW',
+  title: 'Agent',
+  createApplication: 'Create Simple Agent',
+  createWorkFlowApplication: 'Create Workflow Agent',
+  importApplication: 'Import Agent',
+  copyApplication: 'Copy Agent',
   simple: 'SIMPLE',
-  simplePlaceholder: 'Suitable for beginners to create assistant using form settings',
-  workflowPlaceholder:
-    'Suitable for advanced users to build complex logic AI assistants using low-code drag-and-drop',
+  senior: 'WORKFLOW',
+  simpleAgent: 'Simple Agent',
+  AdvancedAgent: 'Advanced Agent',
+  simplePlaceholder: 'Quickly build intelligent agents with basic functions through form settings',
+  advancedPlaceholder:
+    'Using low-code drag-and-drop methods, flexibly orchestrate complex logic and feature-rich agents',
   appTest: 'Debug Preview',
-  searchBar: {
-    placeholder: 'Search by name',
-  },
-  status: {
-    published: 'Published',
-    unpublished: 'Unpublished',
-  },
+  skill: 'Skill',
   operation: {
     addModel: 'Add Model',
     toChat: 'Chat',
-    publish: 'Publish',
   },
   delete: {
-    confirmTitle: 'Are you sure you want to delete this APP: ',
+    confirmTitle: 'Are you sure you want to delete this agent: ',
     confirmMessage:
-      'Deleting this APP will no longer provide its services. Please proceed with caution.',
+      'Deleting this agent will no longer provide its services. Please proceed with caution.',
+    resourceCountMessage:
+      'This agent is associated with {count} resources, and will be unavailable after deletion. Please proceed with caution.',
   },
   tip: {
     publishSuccess: 'Published successfully',
     ExportError: 'Export Failed',
     professionalMessage:
-      'The Community Edition supports up to 5 APP. If you need more APP, please upgrade to the Professional Edition.',
+      'The Community Edition supports up to 5 agents. If you need more agents, please upgrade to the Professional Edition.',
     saveErrorMessage: 'Saving failed, please check your input or try again later',
     loadingErrorMessage: 'Failed to load configuration, please check your input or try again later',
+    noDocPermission: 'No permission to create documents',
+    confirmUse: 'Are you sure you want to use',
+    overwrite: 'overwrite the current workflow',
   },
 
   form: {
     appName: {
-      label: 'Name',
-      placeholder: 'Please enter the APP name',
-      requiredMessage: 'APP name is required',
+      placeholder: 'Please enter the agent name',
+      requiredMessage: 'Agent name is required',
     },
     appDescription: {
       placeholder:
-        'Describe the APP scenario and use, e.g.: XXX assistant answering user questions about XXX product usage',
+        'Describe the Agent scenario and use, e.g.: XXX assistant answering user questions about XXX product usage',
     },
     appType: {
-      label: 'Type',
       simplePlaceholder: 'Suitable for beginners to create assistant.',
       workflowPlaceholder: 'Suitable for advanced users to customize the workflow of assistant',
     },
     appTemplate: {
       blankApp: {
-        title: 'Blank APP',
+        title: 'Blank Agent',
       },
       assistantApp: {
         title: 'Knowledge Assistant',
@@ -78,8 +76,7 @@ export default {
       placeholder:
         'User prompt, you can reference variables in the system: {data} is the segment hit in the knowledge base; {question} is the question asked by the user',
       requiredMessage: 'Please enter User prompt',
-      tooltip:
-        'The question or command that the user poses to the model',
+      tooltip: 'The question or command that the user poses to the model',
 
       noReferencesTooltip:
         'By adjusting the content of the prompt, you can guide the direction of the large model chat. This prompt will be fixed at the beginning of the context. Variables used: {question} is the question posed by the user.',
@@ -131,7 +128,7 @@ export default {
       start: 'Start',
       end: 'End',
     },
-    mcp_output_enable: 'Output MCP/Tool Execution Process',
+    mcp_output_enable: 'Output Execution Process',
   },
   generateDialog: {
     label: 'Generate',
@@ -172,17 +169,17 @@ export default {
     defaultPrompt2: 'tag',
   },
   applicationAccess: {
-    title: 'APP Access',
+    title: 'Third-Party Access',
     wecom: 'WeCom',
-    wecomTip: 'Create WeCom intelligent APP',
+    wecomTip: 'Create WeCom Agent',
     wecomBot: 'WeCom Bot',
     wecomBotTip: 'Create WeCom intelligent Bot',
     dingtalk: 'DingTalk',
-    dingtalkTip: 'Create DingTalk intelligent APP',
+    dingtalkTip: 'Create DingTalk Agent',
     wechat: 'WeChat',
-    wechatTip: 'Create WeChat intelligent APP',
+    wechatTip: 'Create WeChat Agent',
     lark: 'Lark',
-    larkTip: 'Create Lark intelligent APP',
+    larkTip: 'Create Lark Agent',
     setting: 'Setting',
     callback: 'Callback Address',
     callbackTip: 'Please fill in the callback address',
@@ -191,7 +188,7 @@ export default {
     dingtalkPlatform: 'DingTalk Open Platform',
     larkPlatform: 'Lark Open Platform',
     slack: 'Slack',
-    slackTip: 'Create Slack intelligent APP',
+    slackTip: 'Create Slack Agent',
     wecomSetting: {
       title: 'WeCom Configuration',
       cropId: 'Crop ID',
@@ -250,4 +247,5 @@ export default {
     emptyMessage2: 'No matching sections found',
   },
   publishTime: 'Publish Time',
+  publishStatus: 'Publish Status',
 }

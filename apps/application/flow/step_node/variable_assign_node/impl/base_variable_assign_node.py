@@ -10,6 +10,7 @@ class BaseVariableAssignNode(IVariableAssignNode):
     def save_context(self, details, workflow_manage):
         self.context['variable_list'] = details.get('variable_list')
         self.context['result_list'] = details.get('result_list')
+        self.context['exception_message'] = details.get('err_message')
 
     def global_evaluation(self, variable, value):
         from application.flow.loop_workflow_manage import LoopWorkflowManage
@@ -58,7 +59,7 @@ class BaseVariableAssignNode(IVariableAssignNode):
             result['output_value'] = reference
         return result
 
-    def execute(self, variable_list, stream, **kwargs) -> NodeResult:
+    def execute(self, variable_list, **kwargs) -> NodeResult:
         #
         result_list = []
         is_chat = False
@@ -99,5 +100,6 @@ class BaseVariableAssignNode(IVariableAssignNode):
             'variable_list': self.context.get('variable_list'),
             'result_list': self.context.get('result_list'),
             'status': self.status,
-            'err_message': self.err_message
+            'err_message': self.err_message,
+            'enableException': self.node.properties.get('enableException'),
         }

@@ -27,18 +27,16 @@
     </template>
     <LayoutContainer class="application-manage">
       <template #left>
-        <div class="p-8">
-          <folder-tree
-            :data="folderList"
-            :currentNodeKey="currentFolder?.id"
-            @handleNodeClick="folderClickHandle"
-            v-loading="folderLoading"
-            :canOperation="false"
-            showShared
-            :shareTitle="$t('views.shared.shared_knowledge')"
-            :treeStyle="{ height: 'calc(100vh - 240px)' }"
-          />
-        </div>
+        <folder-tree
+          :data="folderList"
+          :currentNodeKey="currentFolder?.id"
+          @handleNodeClick="folderClickHandle"
+          v-loading="folderLoading"
+          :canOperation="false"
+          showShared
+          :shareTitle="$t('views.shared.shared_knowledge')"
+          :treeStyle="{ height: 'calc(100vh - 240px)' }"
+        />
       </template>
       <div class="layout-bg">
         <div class="flex-between p-16 ml-8">
@@ -214,7 +212,7 @@ function folderClickHandle(row: any) {
 
 function getFolder() {
   const params = {}
-  folder.asyncGetFolder('KNOWLEDGE', params, folderLoading).then((res: any) => {
+  folder.asyncGetFolder('KNOWLEDGE', params,apiType.value, folderLoading).then((res: any) => {
     folderList.value = res.data
     currentFolder.value = res.data?.[0] || {}
     getList()

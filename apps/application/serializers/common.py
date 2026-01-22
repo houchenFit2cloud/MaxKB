@@ -6,17 +6,14 @@
     @date：2025/6/9 13:42
     @desc:
 """
-from datetime import datetime
 from typing import List
 
 from django.core.cache import cache
 from django.db.models import QuerySet
-from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
-from application.chat_pipeline.step.chat_step.i_chat_step import PostResponseHandler
-from application.models import Application, ChatRecord, Chat, ApplicationVersion, ChatUserType, ApplicationTypeChoices, \
-    ApplicationKnowledgeMapping
+from application.models import Application, ChatRecord, Chat, ApplicationVersion, ChatUserType, ApplicationTypeChoices
 from application.serializers.application_chat import ChatCountSerializer
 from common.constants.cache_version import Cache_Version
 from common.database_model_manage.database_model_manage import DatabaseModelManage
@@ -24,6 +21,7 @@ from common.exception.app_exception import ChatException
 from knowledge.models import Document
 from models_provider.models import Model
 from models_provider.tools import get_model_credential
+from system_manage.models.resource_mapping import ResourceMapping
 
 
 class ChatInfo:
@@ -78,9 +76,10 @@ class ChatInfo:
                 raise ChatException(500, _("The application has not been published. Please use it after publishing."))
         if application.type == ApplicationTypeChoices.SIMPLE.value:
             # 数据集id列表
-            knowledge_id_list = [str(row.knowledge_id) for row in
-                                 QuerySet(ApplicationKnowledgeMapping).filter(
-                                     application_id=self.application_id)]
+            knowledge_id_list = [str(row.target_id) for row in
+                                 QuerySet(ResourceMapping).filter(source_id=self.application_id,
+                                                                  source_type='APPLICATION',
+                                                                  target_type='KNOWLEDGE')]
 
             # 需要排除的文档
             exclude_document_id_list = [str(document.id) for document in
@@ -115,6 +114,22 @@ class ChatInfo:
             else:
                 self.chat_user = {'username': '游客'}
         return self.chat_user
+
+    def get_chat_user_group(self, asker=None):
+        chat_user = self.get_chat_user(asker=asker)
+        chat_user_id = chat_user.get('id')
+
+        if not chat_user_id:
+            return []
+
+        user_group_relation_model = DatabaseModelManage.get_model("user_group_relation")
+        if user_group_relation_model:
+            return [{
+                'id': user_group_relation.group_id,
+                'name': user_group_relation.group.name
+            } for user_group_relation in
+                QuerySet(user_group_relation_model).select_related('group').filter(user_id=chat_user_id)]
+        return []
 
     def to_base_pipeline_manage_params(self):
         self.get_application()
@@ -161,10 +176,12 @@ class ChatInfo:
             'mcp_source': self.application.mcp_source,
             'tool_enable': self.application.tool_enable,
             'tool_ids': self.application.tool_ids,
+            'application_enable': self.application.application_enable,
+            'application_ids': self.application.application_ids,
             'mcp_output_enable': self.application.mcp_output_enable,
         }
 
-    def to_pipeline_manage_params(self, problem_text: str, post_response_handler: PostResponseHandler,
+    def to_pipeline_manage_params(self, problem_text: str, post_response_handler,
                                   exclude_paragraph_id_list, chat_user_id: str, chat_user_type, stream=True,
                                   form_data=None):
         if form_data is None:
@@ -223,13 +240,116 @@ class ChatInfo:
             else:
                 QuerySet(Chat).filter(id=self.chat_id).update(update_time=timezone.now())
             # 插入会话记录
-            chat_record.save()
+            QuerySet(ChatRecord).update_or_create(id=chat_record.id,
+                                                  create_defaults={'id': chat_record.id,
+                                                                   'chat_id': chat_record.chat_id,
+                                                                   "vote_status": chat_record.vote_status,
+                                                                   'problem_text': chat_record.problem_text,
+                                                                   'answer_text': chat_record.answer_text,
+                                                                   'answer_text_list': chat_record.answer_text_list,
+                                                                   'message_tokens': chat_record.message_tokens,
+                                                                   'answer_tokens': chat_record.answer_tokens,
+                                                                   'const': chat_record.const,
+                                                                   'details': chat_record.details,
+                                                                   'improve_paragraph_id_list': chat_record.improve_paragraph_id_list,
+                                                                   'run_time': chat_record.run_time,
+                                                                   'index': chat_record.index},
+                                                  defaults={
+                                                      "vote_status": chat_record.vote_status,
+                                                      'problem_text': chat_record.problem_text,
+                                                      'answer_text': chat_record.answer_text,
+                                                      'answer_text_list': chat_record.answer_text_list,
+                                                      'message_tokens': chat_record.message_tokens,
+                                                      'answer_tokens': chat_record.answer_tokens,
+                                                      'const': chat_record.const,
+                                                      'details': chat_record.details,
+                                                      'improve_paragraph_id_list': chat_record.improve_paragraph_id_list,
+                                                      'run_time': chat_record.run_time,
+                                                      'index': chat_record.index
+                                                  })
             ChatCountSerializer(data={'chat_id': self.chat_id}).update_chat()
 
+    def to_dict(self):
+
+        return {
+            'chat_id': self.chat_id,
+            'chat_user_id': self.chat_user_id,
+            'chat_user_type': self.chat_user_type,
+            'knowledge_id_list': self.knowledge_id_list,
+            'exclude_document_id_list': self.exclude_document_id_list,
+            'application_id': self.application_id,
+            'chat_record_list': [self.chat_record_to_map(c) for c in self.chat_record_list][-20:],
+            'debug': self.debug
+        }
+
+    def chat_record_to_map(self, chat_record):
+        return {'id': chat_record.id,
+                'chat_id': chat_record.chat_id,
+                'vote_status': chat_record.vote_status,
+                'problem_text': chat_record.problem_text,
+                'answer_text': chat_record.answer_text,
+                'answer_text_list': chat_record.answer_text_list,
+                'message_tokens': chat_record.message_tokens,
+                'answer_tokens': chat_record.answer_tokens,
+                'const': chat_record.const,
+                'details': chat_record.details,
+                'improve_paragraph_id_list': chat_record.improve_paragraph_id_list,
+                'run_time': chat_record.run_time,
+                'index': chat_record.index}
+
+    @staticmethod
+    def map_to_chat_record(chat_record_dict):
+        return ChatRecord(id=chat_record_dict.get('id'),
+                          chat_id=chat_record_dict.get('chat_id'),
+                          vote_status=chat_record_dict.get('vote_status'),
+                          problem_text=chat_record_dict.get('problem_text'),
+                          answer_text=chat_record_dict.get('answer_text'),
+                          answer_text_list=chat_record_dict.get('answer_text_list'),
+                          message_tokens=chat_record_dict.get('message_tokens'),
+                          answer_tokens=chat_record_dict.get('answer_tokens'),
+                          const=chat_record_dict.get('const'),
+                          details=chat_record_dict.get('details'),
+                          improve_paragraph_id_list=chat_record_dict.get('improve_paragraph_id_list'),
+                          run_time=chat_record_dict.get('run_time'),
+                          index=chat_record_dict.get('index'), )
+
     def set_cache(self):
-        cache.set(Cache_Version.CHAT.get_key(key=self.chat_id), self, version=Cache_Version.CHAT.get_version(),
+        cache.set(Cache_Version.CHAT.get_key(key=self.chat_id), self.to_dict(),
+                  version=Cache_Version.CHAT_INFO.get_version(),
                   timeout=60 * 30)
 
     @staticmethod
+    def map_to_chat_info(chat_info_dict):
+        c = ChatInfo(chat_info_dict.get('chat_id'), chat_info_dict.get('chat_user_id'),
+                     chat_info_dict.get('chat_user_type'), chat_info_dict.get('knowledge_id_list'),
+                     chat_info_dict.get('exclude_document_id_list'),
+                     chat_info_dict.get('application_id'),
+                     debug=chat_info_dict.get('debug'))
+        c.chat_record_list = [ChatInfo.map_to_chat_record(c_r) for c_r in chat_info_dict.get('chat_record_list')]
+        return c
+
+    @staticmethod
     def get_cache(chat_id):
-        return cache.get(Cache_Version.CHAT.get_key(key=chat_id), version=Cache_Version.CHAT.get_version())
+        chat_info_dict = cache.get(Cache_Version.CHAT.get_key(key=chat_id),
+                                   version=Cache_Version.CHAT_INFO.get_version())
+        if chat_info_dict:
+            return ChatInfo.map_to_chat_info(chat_info_dict)
+        return None
+
+
+def update_resource_mapping_by_application(application_id: str, other_resource_mapping=None):
+    from application.flow.tools import get_instance_resource, save_workflow_mapping, \
+        application_instance_field_call_dict
+    from system_manage.models.resource_mapping import ResourceType
+    if other_resource_mapping is None:
+        other_resource_mapping = []
+    application = QuerySet(Application).filter(id=application_id).first()
+    instance_mapping = get_instance_resource(application, ResourceType.APPLICATION, str(application.id),
+                                             application_instance_field_call_dict)
+    if application.type == 'WORK_FLOW':
+        save_workflow_mapping(application.work_flow, ResourceType.APPLICATION, str(application_id),
+                              instance_mapping + other_resource_mapping)
+        return
+    else:
+        save_workflow_mapping({}, ResourceType.APPLICATION, str(application_id),
+                              instance_mapping + other_resource_mapping)

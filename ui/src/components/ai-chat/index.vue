@@ -36,9 +36,12 @@
           <template v-for="(item, index) in chatList" :key="index">
             <!-- 问题 -->
             <QuestionContent
+              :chat-management="ChatManagement"
               :type="type"
               :application="applicationDetails"
+              :send-message="sendMessage"
               :chat-record="item"
+              :is-last="index >= chatList.length - 1"
             ></QuestionContent>
             <!-- 回答 -->
             <AnswerContent
@@ -134,6 +137,7 @@ import UserForm from '@/components/ai-chat/component/user-form/index.vue'
 import Control from '@/components/ai-chat/component/control/index.vue'
 import { t } from '@/locales'
 import bus from '@/bus'
+import { throttle } from 'lodash-es'
 provide('upload', (file: any, loading?: Ref<boolean>) => {
   return props.type === 'debug-ai-chat'
     ? applicationApi.postUploadFile(file, 'TEMPORARY_120_MINUTE', 'TEMPORARY_120_MINUTE', loading)
@@ -193,7 +197,7 @@ const initialApiFormData = ref({})
 
 const isUserInput = computed(
   () =>
-    props.applicationDetails.work_flow?.nodes?.filter((v: any) => v.id === 'base-node')[0]
+    props.applicationDetails?.work_flow?.nodes?.filter((v: any) => v.id === 'base-node')[0]
       ?.properties.user_input_field_list.length > 0,
 )
 
@@ -583,16 +587,17 @@ function chatMessage(chat?: any, problem?: string, re_chat?: boolean, other_para
         if (props.chatId === 'new') {
           emit('refresh', chartOpenId.value)
         }
-        if (props.type === 'debug-ai-chat') {
-          getSourceDetail(chat)
-        } else {
-          if (
-            props.applicationDetails &&
-            (props.applicationDetails.show_exec || props.applicationDetails.show_source)
-          ) {
-            getSourceDetail(chat)
-          }
-        }
+        getSourceDetail(chat)
+        // if (props.type === 'debug-ai-chat') {
+        //   getSourceDetail(chat)
+        // } else {
+        //   if (
+        //     props.applicationDetails &&
+        //     (props.applicationDetails.show_exec || props.applicationDetails.show_source)
+        //   ) {
+        //     getSourceDetail(chat)
+        //   }
+        // }
       })
       .finally(() => {
         ChatManagement.close(chat.id)
@@ -657,6 +662,29 @@ onBeforeMount(() => {
     return Promise.resolve(null)
   }
 })
+
+function parseTransform(transformStr: string) {
+  const result = { scale: 1, translateX: 0, translateY: 0, translateZ: 0 }
+
+  if (!transformStr || transformStr === 'none') return result
+
+  // 使用正则表达式匹配 scale 和 translate3d 的值
+  const scaleMatch = transformStr.match(/scale\(([^)]+)\)/)
+  const translateMatch = transformStr.match(/translate3d\(([^)]+)\)/)
+
+  if (scaleMatch) {
+    // scale可能是一个值，也可能是两个值（scaleX, scaleY）
+    const scaleValues = scaleMatch[1].split(',').map((v) => parseFloat(v.trim()))
+    result.scale = scaleValues[0]
+  }
+
+  if (translateMatch) {
+    const translateValues = translateMatch[1].split(',').map((v) => parseFloat(v.trim()))
+    ;[result.translateX, result.translateY, result.translateZ] = translateValues
+  }
+
+  return result
+}
 onMounted(() => {
   if (isUserInput.value && localStorage.getItem(`${accessToken}userForm`)) {
     const userFormData = JSON.parse(localStorage.getItem(`${accessToken}userForm`) || '{}')
@@ -665,6 +693,47 @@ onMounted(() => {
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel()
   }
+
+  const handleZoom = throttle((event: WheelEvent, target: HTMLElement) => {
+    // 2. 解析当前变换状态
+    const currentTransform = target.style.transform
+    const transformValues = parseTransform(currentTransform)
+    const { scale, translateX, translateY } = transformValues
+    // 确保scale是数值类型
+    const currentScale = Array.isArray(scale) ? scale[0] : scale
+
+    // 3. 计算缩放方向和新的缩放比例
+    const zoomIntensity = 0.05 // 每次滚轮的缩放步长
+    const zoomFactor = event.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity
+    const newScale = Math.max(0.1, currentScale * zoomFactor) // 设置最小缩放限制
+    // 4. 计算新的平移值
+    const newTranslateX = (translateX * currentScale) / newScale
+    const newTranslateY = (translateY * currentScale) / newScale
+    // 5. 应用新的变换
+    target.style.transform = `scale(${newScale}) translate3d(${newTranslateX}px, ${newTranslateY}px, 0px)`
+  }, 50) // 50ms 内只执行一次
+
+  document.body.addEventListener(
+    'wheel',
+    (event) => {
+      // 1. 定位目标元素
+      if (event.target) {
+        const target = event.target as HTMLElement
+        // 假设打开状态的图片具有特定类名
+        if (target.classList && target.classList.contains('medium-zoom-overlay')) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        if (target.classList && target.classList.contains('medium-zoom-image--opened')) {
+          event.preventDefault()
+          event.stopPropagation()
+
+          handleZoom(event, target)
+        }
+      }
+    },
+    { passive: false },
+  )
 
   window.sendMessage = sendMessage
   bus.on('on:transcribing', (status: boolean) => {

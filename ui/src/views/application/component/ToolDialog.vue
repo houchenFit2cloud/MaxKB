@@ -21,20 +21,19 @@
         </el-button>
       </div>
     </template>
-    <LayoutContainer class="application-manage">
+    <!-- 共享的知识库工作流中，只能查共享的工具，这里不需要展示左边的树，只需展示右边的内容   -->
+    <LayoutContainer class="application-manage" :show-left="apiType !== 'systemShare'">
       <template #left>
-        <div class="p-8">
-          <folder-tree
-            :data="folderList"
-            :currentNodeKey="currentFolder?.id"
-            @handleNodeClick="folderClickHandle"
-            v-loading="folderLoading"
-            :canOperation="false"
-            showShared
-            :shareTitle="$t('views.shared.shared_tool')"
-            :treeStyle="{ height: 'calc(100vh - 240px)' }"
-          />
-        </div>
+        <folder-tree
+          :data="folderList"
+          :currentNodeKey="currentFolder?.id"
+          @handleNodeClick="folderClickHandle"
+          v-loading="folderLoading"
+          :canOperation="false"
+          showShared
+          :shareTitle="$t('views.shared.shared_tool')"
+          :treeStyle="{ height: 'calc(100vh - 240px)' }"
+        />
       </template>
       <div class="layout-bg">
         <div class="flex-between p-16 ml-8">
@@ -154,7 +153,11 @@ function clearCheck() {
 
 const open = (checked: any) => {
   checkList.value = checked || []
-  getFolder()
+  if (apiType.value === 'systemShare') {
+    getList()
+  } else {
+    getFolder()
+  }
   dialogVisible.value = true
 }
 
@@ -185,7 +188,7 @@ function folderClickHandle(row: any) {
 
 function getFolder() {
   const params = {}
-  folder.asyncGetFolder('TOOL', params, folderLoading).then((res: any) => {
+  folder.asyncGetFolder('TOOL', params, apiType.value, folderLoading).then((res: any) => {
     folderList.value = res.data
     currentFolder.value = res.data?.[0] || {}
     getList()
@@ -197,16 +200,18 @@ function getList() {
   loadSharedApi({
     type: 'tool',
     isShared: folder_id === 'share',
-    systemType: 'workspace',
-  }).getToolList({
-    folder_id: folder_id,
-    tool_type: 'CUSTOM'
-  }).then((res: any) => {
-    toolList.value = res.data?.tools || res.data || []
-    toolList.value = toolList.value?.filter((item: any) => item.is_active)
-    searchData.value = res.data.tools || res.data
-    searchData.value = searchData.value?.filter((item: any) => item.is_active)
+    systemType: apiType.value,
   })
+    .getToolList({
+      folder_id: folder_id,
+      tool_type: 'CUSTOM',
+    })
+    .then((res: any) => {
+      toolList.value = res.data?.tools || res.data || []
+      toolList.value = toolList.value?.filter((item: any) => item.is_active)
+      searchData.value = res.data.tools || res.data
+      searchData.value = searchData.value?.filter((item: any) => item.is_active)
+    })
 }
 
 defineExpose({ open })

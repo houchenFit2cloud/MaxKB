@@ -31,6 +31,8 @@ from common.utils.common import get_file_content
 from common.utils.logger import maxkb_logger
 from common.utils.rsa_util import rsa_long_decrypt, rsa_long_encrypt
 from common.utils.tool_code import ToolExecutor
+from system_manage.models.resource_mapping import ResourceMapping
+from system_manage.serializers.resource_mapping_serializers import ResourceMappingSerializer
 from knowledge.models import File, FileSourceType
 from maxkb.const import CONFIG, PROJECT_DIR
 from system_manage.models import AuthTargetType, WorkspaceUserResourcePermission
@@ -38,7 +40,7 @@ from system_manage.serializers.user_resource_permission import UserResourcePermi
 from tools.models import Tool, ToolScope, ToolFolder, ToolType
 from users.serializers.user import is_workspace_manage
 
-tool_executor = ToolExecutor(CONFIG.get('SANDBOX'))
+tool_executor = ToolExecutor()
 
 
 class ToolInstance:
@@ -354,7 +356,6 @@ class ToolSerializer(serializers.Serializer):
                 self.is_valid(raise_exception=True)
                 ToolCreateRequest(data=instance).is_valid(raise_exception=True)
                 # 校验代码是否包括禁止的关键字
-                ToolExecutor().validate_banned_keywords(instance.get('code', ''))
                 if instance.get('tool_type') == ToolType.MCP:
                     ToolExecutor().validate_mcp_transport(instance.get('code', ''))
 
@@ -391,7 +392,6 @@ class ToolSerializer(serializers.Serializer):
         def test_connection(self):
             self.is_valid(raise_exception=True)
             # 校验代码是否包括禁止的关键字
-            ToolExecutor().validate_banned_keywords(self.data.get('code', ''))
             ToolExecutor().validate_mcp_transport(self.data.get('code', ''))
 
             # 校验mcp json
@@ -433,11 +433,14 @@ class ToolSerializer(serializers.Serializer):
 
         @staticmethod
         def convert_value(name: str, value: str, _type: str, is_required: bool):
-            if not is_required and value is None:
+            if not is_required and (value is None or (isinstance(value, str) and len(value.strip()) == 0)):
                 return None
             try:
                 if _type == 'int':
                     return int(value)
+                if _type == 'boolean':
+                    value = 0 if ['0', '[]'].__contains__(value) else value
+                    return bool(value)
                 if _type == 'float':
                     return float(value)
                 if _type == 'dict':
@@ -486,7 +489,6 @@ class ToolSerializer(serializers.Serializer):
                 self.is_valid(raise_exception=True)
                 ToolEditRequest(data=instance).is_valid(raise_exception=True)
                 # 校验代码是否包括禁止的关键字
-                ToolExecutor().validate_banned_keywords(instance.get('code', ''))
                 if instance.get('tool_type') == ToolType.MCP:
                     ToolExecutor().validate_mcp_transport(instance.get('code', ''))
 
@@ -526,6 +528,7 @@ class ToolSerializer(serializers.Serializer):
                 QuerySet(File).filter(id=tool.icon.split('/')[-1]).delete()
             QuerySet(WorkspaceUserResourcePermission).filter(target=tool.id).delete()
             QuerySet(Tool).filter(id=self.data.get('id')).delete()
+            ResourceMapping.objects.filter(target_id=self.data.get('id')).delete()
 
         def one(self):
             self.is_one_valid(raise_exception=True)
@@ -610,6 +613,7 @@ class ToolSerializer(serializers.Serializer):
                 workspace_id=self.data.get('workspace_id'),
                 input_field_list=tool.get('input_field_list'),
                 init_field_list=tool.get('init_field_list', []),
+                tool_type=tool.get('tool_type'),
                 folder_id=folder_id,
                 scope=scope,
                 is_active=False
@@ -763,6 +767,8 @@ class ToolSerializer(serializers.Serializer):
                         if self.data.get('name', '') != '':
                             if self.data.get('name').lower() not in tool.get('name', '').lower():
                                 continue
+                        if not tool['downloadUrl'].endswith('.tool'):
+                            continue
                         versions = tool.get('versions', [])
                         tool['label'] = tag_dict[tool.get('tags')[0]] if tool.get('tags') else ''
                         tool['version'] = next(
@@ -810,7 +816,7 @@ class ToolSerializer(serializers.Serializer):
                 input_field_list=tool_data.get('input_field_list', []),
                 init_field_list=tool_data.get('init_field_list', []),
                 scope=ToolScope.WORKSPACE,
-                tool_type=ToolType.CUSTOM,
+                tool_type=tool_data.get('tool_type', ToolType.CUSTOM),
                 folder_id=instance.get('folder_id', self.data.get('workspace_id')),
                 template_id=self.data.get('tool_id'),
                 label=instance.get('label'),
@@ -964,8 +970,7 @@ class ToolTreeSerializer(serializers.Serializer):
 
             workspace_manage = is_workspace_manage(self.data.get('user_id'), self.data.get('workspace_id'))
             is_x_pack_ee = self.is_x_pack_ee()
-
-            return native_page_search(
+            result = native_page_search(
                 current_page, page_size, self.get_query_set(workspace_manage, is_x_pack_ee),
                 get_file_content(
                     os.path.join(
@@ -982,6 +987,7 @@ class ToolTreeSerializer(serializers.Serializer):
                     'init_field_list': json.loads(record.get('init_field_list', '[]')),
                 },
             )
+            return ResourceMappingSerializer().get_resource_count(result)
 
         def get_tools(self):
             self.is_valid(raise_exception=True)

@@ -35,6 +35,14 @@
             <el-option v-for="u in user_options" :key="u.id" :value="u.id" :label="u.nick_name" />
           </el-select>
         </div>
+        <el-button
+          class="ml-8"
+          v-if="!isShared && permissionPrecise.create()"
+          @click="openTemplateStoreDialog()"
+        >
+          <AppIcon iconName="app-template-center" class="mr-4" />
+          {{ $t('workflow.setting.templateCenter') }}
+        </el-button>
         <el-dropdown trigger="click" v-if="!isShared && permissionPrecise.create()">
           <el-button type="primary" class="ml-8">
             {{ $t('common.create') }}
@@ -53,7 +61,7 @@
                     <div class="lighter">
                       {{ $t('views.knowledge.knowledgeType.generalKnowledge') }}
                     </div>
-                    <el-text type="info" size="small"
+                    <el-text type="info" size="small" class="color-secondary"
                       >{{ $t('views.knowledge.knowledgeType.generalInfo') }}
                     </el-text>
                   </div>
@@ -68,7 +76,7 @@
                     <div class="lighter">
                       {{ $t('views.knowledge.knowledgeType.webKnowledge') }}
                     </div>
-                    <el-text type="info" size="small"
+                    <el-text type="info" size="small" class="color-secondary"
                       >{{ $t('views.knowledge.knowledgeType.webInfo') }}
                     </el-text>
                   </div>
@@ -91,32 +99,27 @@
                     <div class="lighter">
                       {{ $t('views.knowledge.knowledgeType.larkKnowledge') }}
                     </div>
-                    <el-text type="info" size="small"
+                    <el-text type="info" size="small" class="color-secondary"
                       >{{ $t('views.knowledge.knowledgeType.larkInfo') }}
                     </el-text>
                   </div>
                 </div>
               </el-dropdown-item>
-              <!-- <el-dropdown-item>
+              <el-dropdown-item @click="openCreateDialog(CreateWorkflowKnowledgeDialog)">
                 <div class="flex">
-                  <el-avatar
-                    class="avatar-purple mt-4"
-                    shape="square"
-                    :size="32"
-                    style="background: none"
-                  >
-                    <img src="@/assets/knowledge/logo_yuque.svg" alt="" />
+                  <el-avatar class="avatar-orange mt-4" shape="square" :size="32">
+                    <img src="@/assets/knowledge/logo_workflow.svg" style="width: 60%" alt="" />
                   </el-avatar>
                   <div class="pre-wrap ml-8">
                     <div class="lighter">
-                      {{ $t('views.knowledge.knowledgeType.yuqueKnowledge') }}
+                      {{ $t('views.knowledge.knowledgeType.workflowKnowledge') }}
                     </div>
-                    <el-text type="info" size="small"
-                      >{{ $t('views.knowledge.knowledgeType.yuqueInfo') }}
+                    <el-text type="info" size="small" class="color-secondary"
+                      >{{ $t('views.knowledge.knowledgeType.workflowInfo') }}
                     </el-text>
                   </div>
                 </div>
-              </el-dropdown-item> -->
+              </el-dropdown-item>
               <el-dropdown-item @click="openCreateFolder" divided v-if="apiType === 'workspace'">
                 <div class="flex align-center">
                   <AppIcon iconName="app-folder" style="font-size: 32px"></AppIcon>
@@ -147,33 +150,6 @@
       >
         <el-row v-if="knowledge.knowledgeList.length > 0" :gutter="15" class="w-full">
           <template v-for="(item, index) in knowledge.knowledgeList" :key="index">
-            <!-- <el-col
-              v-if="item.resource_type === 'folder'"
-              :xs="24"
-              :sm="12"
-              :md="12"
-              :lg="8"
-              :xl="6"
-              class="mb-16"
-            >
-              <CardBox
-                :title="item.name"
-                :description="item.desc || $t('components.noDesc')"
-                class="cursor"
-                @click="clickFolder(item)"
-              >
-                <template #icon>
-                  <el-avatar shape="square" :size="32" style="background: none">
-                    <AppIcon iconName="app-folder" style="font-size: 32px"></AppIcon>
-                  </el-avatar>
-                </template>
-                <template #subTitle>
-                  <el-text class="color-secondary lighter" size="small">
-                    {{ $t('common.creator') }}: {{ i18n_name(item.nick_name) }}
-                  </el-text>
-                </template>
-              </CardBox>
-            </el-col> -->
             <el-col :xs="24" :sm="12" :md="12" :lg="8" :xl="6" class="mb-16">
               <CardBox
                 :title="item.name"
@@ -181,7 +157,7 @@
                 class="cursor"
                 @click="
                   router.push({
-                    path: `/knowledge/${item.id}/${folder.currentFolder.id ? (folder.currentFolder.id !== 'share' ? item.folder_id : 'share') : 'shared'}/document`,
+                    path: `/knowledge/${item.id}/${folder.currentFolder.id ? (folder.currentFolder.id !== 'share' ? item.folder_id : 'share') : 'shared'}/${item.type}/document`,
                   })
                 "
               >
@@ -208,11 +184,6 @@
                       <el-divider direction="vertical" />
                       <span class="bold mr-4">{{ numberFormat(item?.char_length) || 0 }}</span>
                       <span class="color-secondary">{{ $t('common.character') }}</span>
-                      <!-- <el-divider direction="vertical" />
-                      <span class="bold mr-4">{{ item?.application_mapping_count || 0 }}</span>
-                      <span class="color-secondary">{{
-                        $t('views.knowledge.relatedApp_count')
-                      }}</span> -->
                     </div>
                   </div>
                 </template>
@@ -269,6 +240,17 @@
                             {{ $t('views.system.resourceAuthorization.title') }}
                           </el-dropdown-item>
                           <el-dropdown-item
+                            text
+                            @click.stop="openResourceMappingDrawer(item)"
+                            v-if="permissionPrecise.relate_map(item.id)"
+                          >
+                            <AppIcon
+                              iconName="app-resource-mapping"
+                              class="color-secondary"
+                            ></AppIcon>
+                            {{ $t('views.system.resourceMapping.title')}}
+                          </el-dropdown-item>
+                          <el-dropdown-item
                             @click.stop="openMoveToDialog(item)"
                             v-if="permissionPrecise.edit(item.id) && apiType === 'workspace'"
                           >
@@ -279,7 +261,7 @@
                           <el-dropdown-item
                             @click.stop="
                               router.push({
-                                path: `/knowledge/${item.id}/${folder.currentFolder.id || 'shared'}/setting`,
+                                path: `/knowledge/${item.id}/${folder.currentFolder.id || 'shared'}/${item.type}/setting`,
                               })
                             "
                             v-if="permissionPrecise.edit(item.id)"
@@ -342,6 +324,8 @@
     ref="ResourceAuthorizationDrawerRef"
     v-if="apiType === 'workspace'"
   />
+  <TemplateStoreDialog ref="templateStoreDialogRef" :api-type="apiType" @refresh="getList" />
+  <ResourceMappingDrawer ref="resourceMappingDrawerRef"></ResourceMappingDrawer>
 </template>
 
 <script lang="ts" setup>
@@ -351,6 +335,7 @@ import { cloneDeep, get } from 'lodash'
 import CreateKnowledgeDialog from '@/views/knowledge/create-component/CreateKnowledgeDialog.vue'
 import CreateWebKnowledgeDialog from '@/views/knowledge/create-component/CreateWebKnowledgeDialog.vue'
 import CreateLarkKnowledgeDialog from '@/views/knowledge/create-component/CreateLarkKnowledgeDialog.vue'
+import CreateWorkflowKnowledgeDialog from '@/views/knowledge/create-component/CreateWorkflowKnowledgeDialog.vue'
 import SyncWebDialog from '@/views/knowledge/component/SyncWebDialog.vue'
 import CreateFolderDialog from '@/components/folder-tree/CreateFolderDialog.vue'
 import MoveToDialog from '@/components/folder-tree/MoveToDialog.vue'
@@ -365,6 +350,13 @@ import { i18n_name } from '@/utils/common'
 import { SourceTypeEnum } from '@/enums/common'
 import { loadSharedApi } from '@/utils/dynamics-api/shared-api'
 import permissionMap from '@/permission'
+import TemplateStoreDialog from '@/views/knowledge/template-store/TemplateStoreDialog.vue'
+import ResourceMappingDrawer from '@/components/resource_mapping/index.vue'
+const resourceMappingDrawerRef = ref<InstanceType<typeof ResourceMappingDrawer>>()
+
+const openResourceMappingDrawer = (knowledge: any) => {
+  resourceMappingDrawerRef.value?.open('KNOWLEDGE', knowledge)
+}
 const router = useRouter()
 const route = useRoute()
 const { folder, user, knowledge } = useStore()
@@ -404,6 +396,7 @@ const MoreFilledPermission = (item: any) => {
     permissionPrecise.value.export(item.id) ||
     permissionPrecise.value.auth(item.id) ||
     permissionPrecise.value.delete(item.id) ||
+    permissionPrecise.value.relate_map(item.id) ||
     isSystemShare.value
   )
 }
@@ -440,10 +433,13 @@ function openMoveToDialog(data: any) {
 }
 
 function refreshKnowledgeList(row: any) {
-  const list = cloneDeep(knowledge.knowledgeList)
-  const index = list.findIndex((v) => v.id === row.id)
-  list.splice(index, 1)
-  knowledge.setKnowledgeList(list)
+  // 不是根目录才会移除
+  if (folder.currentFolder?.parent_id) {
+    const list = cloneDeep(knowledge.knowledgeList)
+    const index = list.findIndex((v) => v.id === row.id)
+    list.splice(index, 1)
+    knowledge.setKnowledgeList(list)
+  }
 }
 
 const CreateKnowledgeDialogRef = ref()
@@ -499,7 +495,7 @@ const exportZipKnowledge = (item: any) => {
 function deleteKnowledge(row: any) {
   MsgConfirm(
     `${t('views.knowledge.delete.confirmTitle')}${row.name} ?`,
-    `${t('views.knowledge.delete.confirmMessage1')} ${row.application_mapping_count} ${t('views.knowledge.delete.confirmMessage2')}`,
+    row.resource_count > 0 ? t('views.knowledge.delete.resourceCountMessage', row.resource_count) : '',
     {
       confirmButtonText: t('common.confirm'),
       confirmButtonClass: 'danger',
@@ -513,6 +509,7 @@ function deleteKnowledge(row: any) {
           const index = list.findIndex((v) => v.id === row.id)
           list.splice(index, 1)
           knowledge.setKnowledgeList(list)
+
           MsgSuccess(t('common.deleteSuccess'))
         })
     })
@@ -571,6 +568,11 @@ function searchHandle() {
 
 function refreshFolder() {
   emit('refreshFolder')
+}
+
+const templateStoreDialogRef = ref()
+function openTemplateStoreDialog() {
+  templateStoreDialogRef.value?.open(folder.currentFolder.id)
 }
 
 onMounted(() => {

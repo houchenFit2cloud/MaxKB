@@ -13,7 +13,7 @@
         </span>
       </div>
 
-      <el-scrollbar :max-height="first ? 0 : 450">
+      <el-scrollbar :max-height="first ? '' : 450">
         <div class="mt-16" style="padding: 0 8px; height: calc(100% - 100px)">
           <DynamicsForm
             :key="dynamicsFormRefresh"
@@ -107,7 +107,7 @@ watch(
 function handleInputFieldList() {
   dynamicsFormRefresh.value++
   const default_value: any = {}
-  props.application.work_flow?.nodes
+  props.application?.work_flow?.nodes
     ?.filter((v: any) => v.id === 'base-node')
     .map((v: any) => {
       inputFieldList.value = v.properties.user_input_field_list

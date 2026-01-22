@@ -10,6 +10,7 @@ from typing import Type
 
 from rest_framework import serializers
 
+from application.flow.common import WorkflowMode
 from application.flow.i_step_node import NodeResult
 from application.flow.step_node.loop_start_node.i_loop_start_node import ILoopStarNode
 
@@ -18,6 +19,7 @@ class BaseLoopStartStepNode(ILoopStarNode):
     def save_context(self, details, workflow_manage):
         self.context['index'] = details.get('current_index')
         self.context['item'] = details.get('current_item')
+        self.context['exception_message'] = details.get('err_message')
 
     def get_node_params_serializer_class(self) -> Type[serializers.Serializer]:
         pass
@@ -31,7 +33,8 @@ class BaseLoopStartStepNode(ILoopStarNode):
             'index': loop_params.get("index"),
             'item': loop_params.get("item")
         }
-        self.workflow_manage.chat_context = self.workflow_manage.get_chat_info().get_chat_variable()
+        if WorkflowMode.APPLICATION_LOOP == self.workflow_manage.flow.workflow_mode:
+            self.workflow_manage.chat_context = self.workflow_manage.get_chat_info().get_chat_variable()
         return NodeResult(node_variable, {})
 
     def get_details(self, index: int, **kwargs):
@@ -52,4 +55,5 @@ class BaseLoopStartStepNode(ILoopStarNode):
             'type': self.node.type,
             'status': self.status,
             'err_message': self.err_message,
+            'enableException': self.node.properties.get('enableException'),
         }

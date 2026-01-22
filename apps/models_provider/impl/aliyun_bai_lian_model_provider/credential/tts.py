@@ -1,6 +1,5 @@
 # coding=utf-8
 
-import traceback
 from typing import Dict
 
 from django.utils.translation import gettext_lazy as _, gettext
@@ -8,7 +7,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from common.exception.app_exception import AppApiException
 from common.forms import BaseForm, PasswordInputField, SingleSelect, SliderField, TooltipLabel
 from models_provider.base_model_provider import BaseModelCredential, ValidCode
-
+from common.utils.logger import maxkb_logger
 
 class AliyunBaiLianTTSModelGeneralParams(BaseForm):
     """
@@ -23,23 +22,25 @@ class AliyunBaiLianTTSModelGeneralParams(BaseForm):
         text_field='value',
         value_field='value',
         option_list=[
-            {'text': _('Long Xiaochun'), 'value': 'longxiaochun'},
-            {'text': _('Long Xiaoxia'), 'value': 'longxiaoxia'},
-            {'text': _('Long Xiaochen'), 'value': 'longxiaocheng'},
-            {'text': _('Long Xiaobai'), 'value': 'longxiaobai'},
-            {'text': _('Long Laotie'), 'value': 'longlaotie'},
-            {'text': _('Long Shu'), 'value': 'longshu'},
-            {'text': _('Long Shuo'), 'value': 'longshuo'},
-            {'text': _('Long Jing'), 'value': 'longjing'},
-            {'text': _('Long Miao'), 'value': 'longmiao'},
-            {'text': _('Long Yue'), 'value': 'longyue'},
-            {'text': _('Long Yuan'), 'value': 'longyuan'},
-            {'text': _('Long Fei'), 'value': 'longfei'},
-            {'text': _('Long Jielidou'), 'value': 'longjielidou'},
-            {'text': _('Long Tong'), 'value': 'longtong'},
-            {'text': _('Long Xiang'), 'value': 'longxiang'},
-            {'text': 'Stella', 'value': 'loongstella'},
-            {'text': 'Bella', 'value': 'loongbella'},
+            {'label': _('Long Xiaochun'), 'value': 'longxiaochun'},
+            {'label': _('Long Xiaoxia'), 'value': 'longxiaoxia'},
+            {'label': _('Long Xiaochen'), 'value': 'longxiaocheng'},
+            {'label': _('Long Xiaobai'), 'value': 'longxiaobai'},
+            {'label': _('Long Laotie'), 'value': 'longlaotie'},
+            {'label': _('Long Shu'), 'value': 'longshu'},
+            {'label': _('Long Shuo'), 'value': 'longshuo'},
+            {'label': _('Long Jing'), 'value': 'longjing'},
+            {'label': _('Long Miao'), 'value': 'longmiao'},
+            {'label': _('Long Yue'), 'value': 'longyue'},
+            {'label': _('Long Yuan'), 'value': 'longyuan'},
+            {'label': _('Long Fei'), 'value': 'longfei'},
+            {'label': _('Long Jielidou'), 'value': 'longjielidou'},
+            {'label': _('Long Tong'), 'value': 'longtong'},
+            {'label': _('Long Xiang'), 'value': 'longxiang'},
+            {'label': 'Stella', 'value': 'loongstella'},
+            {'label': 'Bella', 'value': 'loongbella'},
+            {'label': 'longxiaochun_v2', 'value': 'longxiaochun_v2'},
+            {'label': 'longyingmu_v3', 'value': 'longyingmu_v3'},
         ]
     )
 
@@ -103,7 +104,7 @@ class AliyunBaiLianTTSModelCredential(BaseForm, BaseModelCredential):
             model = provider.get_model(model_type, model_name, model_credential, **model_params)
             model.check_auth()
         except Exception as e:
-            traceback.print_exc()
+            maxkb_logger.error(f'Exception: {e}', exc_info=True)
             if isinstance(e, AppApiException):
                 raise e
             if raise_exception:

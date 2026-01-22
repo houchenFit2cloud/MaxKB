@@ -10,21 +10,21 @@ import re
 from typing import Type
 
 from django.core import validators
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from rest_framework.utils.formatting import lazy_format
 
+from application.flow.common import WorkflowMode
 from application.flow.i_step_node import INode, NodeResult
 from common.exception.app_exception import AppApiException
 from common.field.common import ObjectField
-
-from django.utils.translation import gettext_lazy as _
-from rest_framework.utils.formatting import lazy_format
 
 
 class InputField(serializers.Serializer):
     name = serializers.CharField(required=True, label=_('Variable Name'))
     is_required = serializers.BooleanField(required=True, label=_("Is this field required"))
     type = serializers.CharField(required=True, label=_("type"), validators=[
-        validators.RegexValidator(regex=re.compile("^string|int|dict|array|float$"),
+        validators.RegexValidator(regex=re.compile("^string|int|dict|array|float|boolean$"),
                                   message=_("The field only supports string|int|dict|array|float"), code=500)
     ])
     source = serializers.CharField(required=True, label=_("source"), validators=[
@@ -53,6 +53,8 @@ class FunctionNodeParamsSerializer(serializers.Serializer):
 
 class IToolNode(INode):
     type = 'tool-node'
+    support = [WorkflowMode.APPLICATION, WorkflowMode.APPLICATION_LOOP, WorkflowMode.KNOWLEDGE,
+               WorkflowMode.KNOWLEDGE_LOOP]
 
     def get_node_params_serializer_class(self) -> Type[serializers.Serializer]:
         return FunctionNodeParamsSerializer

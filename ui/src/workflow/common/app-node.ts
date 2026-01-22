@@ -1,3 +1,4 @@
+import { WorkflowKind } from './../../enums/application'
 import Components from '@/components'
 import ElementPlus from 'element-plus'
 import * as ElementPlusIcons from '@element-plus/icons-vue'
@@ -65,24 +66,53 @@ class AppNode extends HtmlResize.view {
     if (this.props.model.type === 'start-node') {
       result.push({
         value: 'global',
-        label: t('views.applicationWorkflow.variable.global'),
+        label: t('workflow.variable.global'),
         type: 'global',
         children: this.props.model.properties?.config?.globalFields || [],
       })
       result.push({
         value: 'chat',
-        label: t('views.applicationWorkflow.variable.chat'),
+        label: t('workflow.variable.chat'),
         type: 'chat',
         children: this.props.model.properties?.config?.chatFields || [],
       })
     }
-    result.push({
+    if (this.props.model.type === 'knowledge-base-node') {
+      let globalFields = []
+      if (this.props.model.properties.user_input_field_list) {
+        globalFields = this.props.model.properties.user_input_field_list.map((item: any) => ({
+          label: typeof item.label == 'string' ? item.label : item.label.label,
+          value: item.field,
+        }))
+      }
+
+      result.push({
+        value: 'global',
+        label: t('workflow.variable.global'),
+        type: 'global',
+        children: globalFields,
+      })
+    }
+    const children = [...(this.props.model.properties?.config?.fields || [])]
+    if (this.props.model.properties.enableException) {
+      children.push({
+        label: '异常信息',
+        value: 'exception_message',
+        globeLabel: `{{${this.props.model.properties.stepName}.exception_message}}`,
+        globeValue: `{{context['${this.props.model.id}'].exception_message}}`,
+      })
+    }
+    const value: any = {
       value: this.props.model.id,
       icon: this.props.model.properties.node_data?.icon,
       label: this.props.model.properties.stepName,
       type: this.props.model.type,
-      children: this.props.model.properties?.config?.fields || [],
-    })
+      children: children,
+    }
+    if (this.props.model.properties.kind) {
+      value['kind'] = this.props.model.properties.kind
+    }
+    result.push(value)
     return result
   }
   get_up_node_field_dict(contain_self: boolean, use_cache: boolean) {
@@ -107,10 +137,17 @@ class AppNode extends HtmlResize.view {
       (pre, next) => [...pre, ...next],
       [],
     )
-    const start_node_field_list = (
-      this.props.graphModel.getNodeModelById('start-node') ||
-      this.props.graphModel.getNodeModelById('loop-start-node')
-    ).get_node_field_list()
+    const start_node_field_list =
+      (
+        this.props.graphModel.getNodeModelById('start-node') ||
+        this.props.graphModel.getNodeModelById('loop-start-node')
+      )?.get_node_field_list() || []
+    const kbn = this.props.graphModel.getNodeModelById('knowledge-base-node')
+    if (kbn) {
+      const knowledgeBaseFieldList = kbn.get_node_field_list()
+      return [...knowledgeBaseFieldList, ...start_node_field_list, ...result]
+    }
+
     return [...start_node_field_list, ...result]
   }
 
@@ -155,7 +192,7 @@ class AppNode extends HtmlResize.view {
               ? `<svg width="100%" height="100%" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
               <g filter="url(#filter0_d_5119_232585)">
               <path d="M20.9998 29.8333C28.0875 29.8333 33.8332 24.0876 33.8332 17C33.8332 9.91231 28.0875 4.16663 20.9998 4.16663C13.9122 4.16663 8.1665 9.91231 8.1665 17C8.1665 24.0876 13.9122 29.8333 20.9998 29.8333Z" fill="white"/>
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M20.9998 27.5C26.7988 27.5 31.4998 22.799 31.4998 17C31.4998 11.201 26.7988 6.49996 20.9998 6.49996C15.2008 6.49996 10.4998 11.201 10.4998 17C10.4998 22.799 15.2008 27.5 20.9998 27.5ZM33.8332 17C33.8332 24.0876 28.0875 29.8333 20.9998 29.8333C13.9122 29.8333 8.1665 24.0876 8.1665 17C8.1665 9.91231 13.9122 4.16663 20.9998 4.16663C28.0875 4.16663 33.8332 9.91231 33.8332 17Z" fill="#3370FF"/>
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M20.9998 27.5C26.7988 27.5 31.4998 22.799 31.4998 17C31.4998 11.201 26.7988 6.49996 20.9998 6.49996C15.2008 6.49996 10.4998 11.201 10.4998 17C10.4998 22.799 15.2008 27.5 20.9998 27.5ZM33.8332 17C33.8332 24.0876 28.0875 29.8333 20.9998 29.8333C13.9122 29.8333 8.1665 24.0876 8.1665 17C8.1665 9.91231 13.9122 4.16663 20.9998 4.16663C28.0875 4.16663 33.8332 9.91231 33.8332 17Z" fill="${anchorData.id.endsWith('_exception_right') ? '#FF8800' : '#3370FF'}"/>
               </g>
               <defs>
               <filter id="filter0_d_5119_232585" x="-1" y="-1" width="44" height="44" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
@@ -173,7 +210,7 @@ class AppNode extends HtmlResize.view {
               `
               : `<svg width="100%" height="100%" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g filter="url(#filter0_d_5199_166905)">
-        <path d="M20.9998 29.8333C28.0875 29.8333 33.8332 24.0876 33.8332 17C33.8332 9.91231 28.0875 4.16663 20.9998 4.16663C13.9122 4.16663 8.1665 9.91231 8.1665 17C8.1665 24.0876 13.9122 29.8333 20.9998 29.8333Z" fill="#3370FF"/>
+        <path d="M20.9998 29.8333C28.0875 29.8333 33.8332 24.0876 33.8332 17C33.8332 9.91231 28.0875 4.16663 20.9998 4.16663C13.9122 4.16663 8.1665 9.91231 8.1665 17C8.1665 24.0876 13.9122 29.8333 20.9998 29.8333Z" fill="${anchorData.id.endsWith('_exception_right') ? '#FF8800' : '#3370FF'}"/>
         <path d="M19.8332 11.75C19.8332 11.4278 20.0943 11.1666 20.4165 11.1666H21.5832C21.9053 11.1666 22.1665 11.4278 22.1665 11.75V15.8333H26.2498C26.572 15.8333 26.8332 16.0945 26.8332 16.4166V17.5833C26.8332 17.9055 26.572 18.1666 26.2498 18.1666H22.1665V22.25C22.1665 22.5721 21.9053 22.8333 21.5832 22.8333H20.4165C20.0943 22.8333 19.8332 22.5721 19.8332 22.25V18.1666H15.7498C15.4277 18.1666 15.1665 17.9055 15.1665 17.5833V16.4166C15.1665 16.0945 15.4277 15.8333 15.7498 15.8333H19.8332V11.75Z" fill="white"/>
         </g>
         <defs>
@@ -381,13 +418,13 @@ class AppNodeModel extends HtmlResize.model {
       return false
     }
     const circleOnlyAsTarget = {
-      message: t('views.applicationWorkflow.tip.onlyRight'),
+      message: t('workflow.tip.onlyRight'),
       validate: (sourceNode: any, targetNode: any, sourceAnchor: any) => {
         return sourceAnchor.type === 'right'
       },
     }
     this.sourceRules.push({
-      message: t('views.applicationWorkflow.tip.notRecyclable'),
+      message: t('workflow.tip.notRecyclable'),
       validate: (sourceNode: any, targetNode: any, sourceAnchor: any, targetAnchor: any) => {
         if (targetNode.id == sourceNode.id) {
           return false
@@ -403,7 +440,7 @@ class AppNodeModel extends HtmlResize.model {
 
     this.sourceRules.push(circleOnlyAsTarget)
     this.targetRules.push({
-      message: t('views.applicationWorkflow.tip.onlyLeft'),
+      message: t('workflow.tip.onlyLeft'),
       validate: (sourceNode: any, targetNode: any, sourceAnchor: any, targetAnchor: any) => {
         return targetAnchor.type === 'left'
       },
@@ -413,15 +450,26 @@ class AppNodeModel extends HtmlResize.model {
     const { id, x, y, width } = this
     const showNode = this.properties.showNode === undefined ? true : this.properties.showNode
     const anchors: any = []
-
-    if (this.type !== WorkflowType.Base) {
-      if (![WorkflowType.Start, WorkflowType.LoopStartNode.toString()].includes(this.type)) {
+    if (![WorkflowType.Base as string, WorkflowType.KnowledgeBase as string].includes(this.type)) {
+      if (
+        ![WorkflowType.Start, WorkflowType.LoopStartNode.toString()].includes(this.type) &&
+        this.properties.kind != WorkflowKind.DataSource
+      ) {
         anchors.push({
           x: x - width / 2 + 10,
           y: showNode ? y : y - 15,
           id: `${id}_left`,
           edgeAddable: false,
           type: 'left',
+        })
+      }
+
+      if (this.properties.enableException) {
+        anchors.push({
+          x: x + width / 2 - 10,
+          y: y + this.height / 2 - 80,
+          id: `${id}_exception_right`,
+          type: 'right',
         })
       }
       anchors.push({

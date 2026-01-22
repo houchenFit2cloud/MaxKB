@@ -1,7 +1,6 @@
 export default {
   title: '概覽',
   appInfo: {
-    header: '應用資訊',
     publicAccessLink: '公開訪問連結',
     openText: '開',
     closeText: '關',
@@ -21,8 +20,8 @@ export default {
     },
     APIKeyDialog: {
       saveSettings: '儲存設定',
-      msgConfirm1: '是否刪除API Key',
-      msgConfirm2: '刪除API Key後將無法恢復，請確認是否刪除？',
+      msgConfirm1: '是否刪除 API Key',
+      msgConfirm2: '刪除 API Key 後將無法恢復，請確認是否刪除？',
     },
     EmbedDialog: {
       fullscreenModeTitle: '全螢幕模式',
@@ -42,6 +41,8 @@ export default {
       loginMethodRequired: '請選擇登陸方式',
       displayCodeRequired: '請輸入失敗次數',
       toSettingChatUser: '去配置對話用戶',
+      authenticationTooltip:
+        '開啟登陸認證後，智能體和關聯的知識庫均需要對話用戶授權配置，否則用戶無權限登陸和知識庫檢索',
     },
     SettingAPIKeyDialog: {
       dialogTitle: '設定',
@@ -97,6 +98,8 @@ export default {
       userSatisfaction: '用戶滿意度',
       approval: '贊同',
       disapproval: '反對',
+      tokenUsage: '用戶消耗 Tokens',
+      topQuestions: '用戶提問次數',
     },
   },
 }

@@ -31,7 +31,7 @@
               </el-icon>
             </el-button>
             <el-dropdown
-              v-if="showOperate(nodeModel.type)"
+              v-if="showConditionOperate(nodeModel.type)"
               :teleported="false"
               trigger="click"
               placement="bottom-start"
@@ -42,17 +42,14 @@
               </el-button>
               <template #dropdown>
                 <div style="width: 280px" class="p-12-16">
-                  <h5>{{ $t('views.applicationWorkflow.condition.title') }}</h5>
+                  <h5>{{ $t('workflow.condition.title') }}</h5>
                   <p class="mt-8 lighter">
-                    <span>{{ $t('views.applicationWorkflow.condition.front') }}</span>
+                    <span>{{ $t('workflow.condition.front') }}</span>
                     <el-select v-model="condition" size="small" style="width: 60px; margin: 0 8px">
-                      <el-option
-                        :label="$t('views.applicationWorkflow.condition.AND')"
-                        value="AND"
-                      />
-                      <el-option :label="$t('views.applicationWorkflow.condition.OR')" value="OR" />
+                      <el-option :label="$t('workflow.condition.AND')" value="AND" />
+                      <el-option :label="$t('workflow.condition.OR')" value="OR" />
                     </el-select>
-                    <span>{{ $t('views.applicationWorkflow.condition.text') }}</span>
+                    <span>{{ $t('workflow.condition.text') }}</span>
                   </p>
                 </div>
               </template>
@@ -84,8 +81,8 @@
               class="mb-16"
               :title="
                 props.nodeModel.type === 'application-node'
-                  ? $t('views.applicationWorkflow.tip.applicationNodeError')
-                  : $t('views.applicationWorkflow.tip.toolNodeError')
+                  ? $t('workflow.tip.applicationNodeError')
+                  : $t('workflow.tip.toolNodeError')
               "
               type="error"
               show-icon
@@ -93,9 +90,16 @@
             />
             <slot></slot>
             <template v-if="nodeFields.length > 0">
-              <h5 class="title-decoration-1 mb-8 mt-8">
-                {{ $t('common.param.outputParam') }}
-              </h5>
+              <div class="flex-between">
+                <h5 class="title-decoration-1 mb-8 mt-8">
+                  {{ $t('common.param.outputParam') }}
+                </h5>
+                <div v-if="exceptionNodeList.includes(nodeModel.type)" class="text-right">
+                  <span class="mt-8 mr-8 lighter">{{ $t('common.param.exception') }}</span>
+                  <el-switch v-model="enable_exception" size="small" />
+                </div>
+              </div>
+
               <template v-for="(item, index) in nodeFields" :key="index">
                 <div
                   class="flex-between border-r-6 p-8-12 mb-8 layout-bg lighter"
@@ -105,7 +109,7 @@
                   <span class="break-all">{{ item.label }} {{ '{' + item.value + '}' }}</span>
                   <el-tooltip
                     effect="dark"
-                    :content="$t('views.applicationWorkflow.setting.copyParam')"
+                    :content="$t('workflow.setting.copyParam')"
                     placement="top"
                     v-if="showicon === index"
                   >
@@ -129,14 +133,16 @@
         @click.stop
         @wheel="handleWheel"
         :show="showAnchor"
+        :inner="true"
         :id="id"
-        style="left: 100%; top: 50%; transform: translate(0, -50%)"
+        style="left: 100%; transform: translate(0, -50%)"
+        :style="dropdownMenuStyle"
         @clickNodes="clickNodes"
       />
     </el-collapse-transition>
 
     <el-dialog
-      :title="$t('views.applicationWorkflow.nodeName')"
+      :title="$t('workflow.nodeName')"
       v-model="nodeNameDialogVisible"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
@@ -172,16 +178,17 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import DropdownMenu from '@/views/application-workflow/component/DropdownMenu.vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { set } from 'lodash'
 import { iconComponent } from '../icons/utils'
 import { copyClick } from '@/utils/clipboard'
-import { WorkflowType } from '@/enums/application'
+import { WorkflowType, WorkflowKind } from '@/enums/application'
 import { MsgError, MsgConfirm } from '@/utils/message'
 import type { FormInstance } from 'element-plus'
 import { t } from '@/locales'
 import { useRoute } from 'vue-router'
+import DropdownMenu from '@/components/workflow-dropdown-menu/index.vue'
+
 const route = useRoute()
 const {
   params: { id },
@@ -198,6 +205,13 @@ const height = ref<{
 })
 const showAnchor = ref<boolean>(false)
 const anchorData = ref<any>()
+const dropdownMenuStyle = computed(() => {
+  return {
+    top: anchorData.value
+      ? anchorData.value.y - props.nodeModel.y + props.nodeModel.height / 2 + 'px'
+      : '0px',
+  }
+})
 const titleFormRef = ref()
 const nodeNameDialogVisible = ref<boolean>(false)
 const form = ref<any>({
@@ -256,10 +270,11 @@ const editName = async (formEl: FormInstance | undefined) => {
           ?.some((node: any) => node.properties.stepName === form.value.title)
       ) {
         set(props.nodeModel.properties, 'stepName', form.value.title)
+        props.nodeModel.clear_next_node_field(true)
         nodeNameDialogVisible.value = false
         formEl.resetFields()
       } else {
-        MsgError(t('views.applicationWorkflow.tip.repeatedNodeError'))
+        MsgError(t('workflow.tip.repeatedNodeError'))
       }
     }
   })
@@ -282,7 +297,7 @@ const copyNode = () => {
   props.nodeModel.graphModel.toFront(cloneNode.id)
 }
 const deleteNode = () => {
-  MsgConfirm(t('common.tip'), t('views.applicationWorkflow.delete.confirmTitle'), {
+  MsgConfirm(t('common.tip'), t('workflow.delete.confirmTitle'), {
     confirmButtonText: t('common.confirm'),
     confirmButtonClass: 'danger',
   }).then(() => {
@@ -325,10 +340,33 @@ function clickNodes(item: any) {
 
   closeNodeMenu()
 }
+const enable_exception = computed({
+  set: (v) => {
+    set(props.nodeModel.properties, 'enableException', v)
+  },
+  get: () => {
+    if (props.nodeModel.properties.enableException !== undefined) {
+      return props.nodeModel.properties.enableException
+    }
+    set(props.nodeModel.properties, 'enableException', false)
+    return false
+  },
+})
+const props = withDefaults(
+  defineProps<{
+    nodeModel: any
+    exceptionNodeList?: string[]
+  }>(),
+  {
+    exceptionNodeList: () => [
+      'ai-chat-node',
+      'video-understand-node',
+      'image-generate-node',
+      'image-understand-node',
+    ],
+  },
+)
 
-const props = defineProps<{
-  nodeModel: any
-}>()
 const nodeFields = computed(() => {
   if (props.nodeModel.properties.config.fields) {
     const fields = props.nodeModel.properties.config.fields?.map((field: any) => {
@@ -339,14 +377,51 @@ const nodeFields = computed(() => {
         globeValue: `{{context['${props.nodeModel.id}'].${field.value}}}`,
       }
     })
+    if (enable_exception.value) {
+      return [
+        ...fields,
+        {
+          label: '异常信息',
+          value: 'exception_message',
+          globeLabel: `{{${props.nodeModel.properties.stepName}.exception_message}}`,
+          globeValue: `{{context['${props.nodeModel.id}'].exception_message}}`,
+        },
+      ]
+    }
     return fields
   }
   return []
 })
+watch(enable_exception, () => {
+  props.nodeModel.graphModel.eventCenter.emit(
+    'delete_edge',
+    props.nodeModel.outgoing.edges
+      .filter((item: any) =>
+        [`${props.nodeModel.id}_exception_right`].includes(item.sourceAnchorId),
+      )
+      .map((item: any) => item.id),
+  )
+})
 
 function showOperate(type: string) {
-  return ![WorkflowType.Start, WorkflowType.Base, WorkflowType.LoopStartNode.toString()].includes(
-    type,
+  return ![
+    WorkflowType.Start,
+    WorkflowType.Base,
+    WorkflowType.KnowledgeBase,
+    WorkflowType.LoopStartNode.toString(),
+  ].includes(type)
+}
+
+function showConditionOperate(type: string) {
+  return (
+    ![
+      WorkflowType.Start,
+      WorkflowType.Base,
+      WorkflowType.KnowledgeBase,
+      WorkflowType.LoopStartNode.toString(),
+      WorkflowType.DataSourceLocalNode,
+      WorkflowType.DataSourceWebNode,
+    ].includes(type) && props.nodeModel.properties.kind != WorkflowKind.DataSource
   )
 }
 const openNodeMenu = (anchorValue: any) => {
